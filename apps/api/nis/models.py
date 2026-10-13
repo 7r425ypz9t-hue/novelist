@@ -24,6 +24,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from .crypto import EncryptedJSON, EncryptedText
 from .db import Base
 
 
@@ -149,8 +150,8 @@ class Document(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=new_id)
     project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
     node_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("nodes.id", ondelete="CASCADE"), unique=True)
-    content_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    text_plain: Mapped[str] = mapped_column(Text, default="")
+    content_json: Mapped[dict[str, Any]] = mapped_column(EncryptedJSON, default=dict)
+    text_plain: Mapped[str] = mapped_column(EncryptedText, default="")
     content_hash: Mapped[str] = mapped_column(String(64), default="")
     version: Mapped[int] = mapped_column(Integer, default=0)
     word_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -178,8 +179,8 @@ class Revision(Base):
     author_type: Mapped[str] = mapped_column(String(24))  # human | human_accepted_ai | import
     created_by: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
     label: Mapped[str] = mapped_column(String(200), default="")
-    content_json: Mapped[dict[str, Any]] = mapped_column(JSON)
-    text_plain: Mapped[str] = mapped_column(Text)
+    content_json: Mapped[dict[str, Any]] = mapped_column(EncryptedJSON)
+    text_plain: Mapped[str] = mapped_column(EncryptedText)
     checksum: Mapped[str] = mapped_column(String(64))
     word_count: Mapped[int] = mapped_column(Integer, default=0)
     client_save_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -194,7 +195,7 @@ class Comment(TimestampMixin, Base):
     document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), index=True)
     author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     anchor: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # {block, quote}
-    body: Mapped[str] = mapped_column(Text)
+    body: Mapped[str] = mapped_column(EncryptedText)
     state: Mapped[str] = mapped_column(String(16), default="open")
 
 
@@ -331,8 +332,8 @@ class SourceChunk(Base):
     ordinal: Mapped[int] = mapped_column(Integer)
     page: Mapped[int | None] = mapped_column(Integer, nullable=True)
     locator: Mapped[str] = mapped_column(String(120))
-    content: Mapped[str] = mapped_column(Text)
-    normalized: Mapped[str] = mapped_column(Text)
+    content: Mapped[str] = mapped_column(EncryptedText)
+    normalized: Mapped[str] = mapped_column(EncryptedText)
     checksum: Mapped[str] = mapped_column(String(64))
     flags: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 

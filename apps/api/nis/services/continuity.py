@@ -37,7 +37,7 @@ _TENS = {"عشرين": 20, "ثلاثين": 30, "اربعين": 40, "خمسين":
 _NUM_WORD = "|".join(sorted(list(_UNITS) + list(_TENS), key=len, reverse=True))
 _NUM_PHRASE = (r"(?:(?:" + _NUM_WORD + r")(?:\s+عشره?)?(?:\s+و\s*(?:ال)?(?:" + _NUM_WORD + r"))?)")
 _AGE_RE = re.compile(
-    r"(?:عمره|عمرها|عمري|سنه|سنها|يبلغ|تبلغ|بلغ|بلغت|ابن|ابنه|بنت|في|ذو|ذات)\s+(?:ال)?"
+    r"(?:(?:عمره|عمرها|عمري|سنه|سنها|ابن|ابنه|بنت|في|ذو|ذات)|(?:يبلغ|تبلغ|بلغ|بلغت)(?:\s+[^\s\d]+)?)\s+(?:ال)?"
     r"(?P<num>\d{1,3}|" + _NUM_PHRASE + r")"
     r"\s*(?:عاما|عام|سنه|سنوات|سنين|ربيعا|خريفا|من\s+(?:العمر|عمره|عمرها|عمري))"
 )
@@ -221,7 +221,7 @@ class Scan:
                 # nearest preceding character mention in the same sentence window
                 window_start = max(norm.rfind(".", 0, m.start()), norm.rfind("؟", 0, m.start()),
                                    norm.rfind("\n", 0, m.start()), m.start() - 160)
-                cands = [t for t in char_spans if window_start <= t[0] < m.start()]
+                cands = [t for t in char_spans if window_start <= t[0] < m.start("num")]
                 if not cands:
                     cands = [t for t in char_spans if m.end() <= t[0] < m.end() + 40]
                 if not cands:

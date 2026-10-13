@@ -16,3 +16,5 @@ Implementation decisions (2026-10-13, rationale in docs/SPEC_REVIEW.md §7):
 - D-08 New skill SK21 for A08 (memory keeper); A06 added to the A00 planning stage.
 - D-09 PDF via ReportLab + arabic-reshaper + python-bidi with an embedded OFL Noto Naskh Arabic (Arabic + Latin subsets merged); optional tashkeel is dropped in PDF only.
 - D-10 No hard-coded model prices or provider retention claims; costs only when the operator configures prices.
+- D-11 Encryption at rest with one server key (AES-256-GCM, `enc:v1:` prefix, legacy plaintext readable); per-project author keys deferred.
+- D-12 Story time stays a Gregorian decimal axis; Hijri input converted with the tabular calendar, original wording kept in the label.

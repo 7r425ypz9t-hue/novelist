@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Character, EventItem, Fact, Place, TreeNode } from "../api/types";
 import { useProject } from "../App";
+import { HijriPicker } from "../components/HijriPicker";
 import { Icon } from "../components/Icon";
 import { Card, Empty, Field, Modal, Status, Tabs, useToast } from "../components/ui";
 
@@ -183,6 +184,7 @@ function Events() {
             <Field label="بداية (سنة القصة)"><input className="input" dir="ltr" type="number" step="any" value={edit.story_time_start ?? ""} onChange={(e) => setEdit({ ...edit, story_time_start: e.target.value as any })} /></Field>
             <Field label="نهاية (اختياري)"><input className="input" dir="ltr" type="number" step="any" value={edit.story_time_end ?? ""} onChange={(e) => setEdit({ ...edit, story_time_end: e.target.value as any })} /></Field>
             <Field label="وصف الزمن"><input className="input" value={edit.time_label || ""} onChange={(e) => setEdit({ ...edit, time_label: e.target.value })} /></Field>
+            <div className="full"><HijriPicker onConvert={(c) => setEdit({ ...edit, story_time_start: c.story_time, time_label: c.label, uncertainty: c.uncertainty })} /></div>
             <Field label="ترتيب السرد"><input className="input" dir="ltr" type="number" value={edit.narration_order ?? ""} onChange={(e) => setEdit({ ...edit, narration_order: e.target.value as any })} /></Field>
             <Field label="المشهد المرتبط"><select className="select" value={edit.node_id || ""} onChange={(e) => setEdit({ ...edit, node_id: e.target.value || null })}>
               <option value="">—</option>{nodes.map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}</select></Field>

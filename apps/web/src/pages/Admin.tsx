@@ -26,7 +26,7 @@ export function AdminPage() {
       <div className="grid g4" style={{ marginBottom: 16 }}>
         <Kpi label="الخدمة" value={h ? <span className="row" style={{ justifyContent: "flex-end" }}><span className="dot ok" /> {h.status.toUpperCase()}</span> : "…"} sub={h && `v${h.version} · uptime ${Math.round(h.uptime_s / 60)} د`} tone="ok" />
         <Kpi label="قاعدة البيانات" value={h ? `${h.database.latency_ms} ms` : "…"} sub={h?.database.engine} />
-        <Kpi label="التخزين" value={h ? (h.storage.ok ? "OK" : "ERR") : "…"} tone={h?.storage.ok ? "ok" : "bad"} />
+        <Kpi label="التخزين" value={h ? (h.storage.ok ? "OK" : "ERR") : "…"} sub={h ? (h.encryption_at_rest ? "تشفير المحتوى: مفعّل (AES-256-GCM)" : "تشفير المحتوى: غير مفعّل") : undefined} tone={h?.storage.ok ? (h.encryption_at_rest ? "ok" : "gold") : "bad"} />
         <Kpi label="مزود النماذج" value={h ? (h.provider.available ? h.provider.name : "معطّل") : "…"} sub={h?.provider.destination} tone="gold" />
       </div>
       <div className="grid g4" style={{ marginBottom: 16 }}>

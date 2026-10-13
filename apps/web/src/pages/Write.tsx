@@ -10,6 +10,7 @@ import { api } from "../api/client";
 import type { Character, Doc, Place, Proposal, Revision, TreeNode } from "../api/types";
 import { useProject } from "../App";
 import { Icon } from "../components/Icon";
+import { HijriPicker } from "../components/HijriPicker";
 import { DiffView, Empty, Field, Modal, Status, Tabs, useToast } from "../components/ui";
 import { ago, countWords, docText, fmt } from "../lib/arabic";
 import { SAVE_LABEL, useAutosave } from "../lib/autosave";
@@ -395,6 +396,7 @@ function SceneMatrix({ node, pid, canWrite }: { node: TreeNode; pid: string; can
         <Field label="زمن القصة (سنة)"><input className="input" type="number" step="any" dir="ltr" value={m.story_time ?? ""} onChange={set("story_time")} disabled={!canWrite} /></Field>
         <Field label="وصف الزمن"><input className="input" value={m.story_time_label || ""} onChange={set("story_time_label")} placeholder="ربيع، فجر…" disabled={!canWrite} /></Field>
       </div>
+      <HijriPicker disabled={!canWrite} onConvert={(c) => setM({ ...m, story_time: c.story_time, story_time_label: c.label })} />
       {canWrite && <button className="btn primary" onClick={() => save.mutate()} disabled={save.isPending}>حفظ المصفوفة</button>}
     </div>
   );

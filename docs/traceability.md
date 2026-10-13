@@ -15,12 +15,12 @@
 | FR06 | إصدارات ثابتة، فروق، استعادة، منع الكتابة فوق السابق | `models.Revision` (+ ORM guard), `save_document`, `/diff`, `/restore`, حذف ناعم | `api/test_manuscript.py::test_AT04_*`, `test_AT05_*`, `test_revisions_are_immutable_*` | ✅ |
 | FR07 | ملفات الشخصيات | `routers/bible.py`, `pages/Bible.tsx` | `api/test_continuity.py` | ✅ (العمر عبر الزمن مشتق من سنة الميلاد) |
 | FR08 | الأماكن، إحداثيات اختيارية، قيود تاريخية | `routers/bible.py` | واجهة + `api/test_agents.py` (SK04 ضمن A00) | 🟡 لا خريطة جغرافية |
-| FR09 | أحداث بزمن القصة وترتيب السرد، مجهول/نطاق/احتمال | `models.Event`, `/timeline`, `pages/Views.tsx` | `api/test_continuity.py::test_AT08_*` | ✅ |
+| FR09 | أحداث بزمن القصة وترتيب السرد، مجهول/نطاق/احتمال، والتقويم الهجري | `models.Event`, `/timeline`, `calendars.py`, `components/HijriPicker.tsx` | `api/test_continuity.py::test_AT08_*`, `api/test_calendars.py`, e2e R4 | ✅ |
 | FR10 | مصفوفة المشاهد | `nodes.meta`, `Write.tsx::SceneMatrix`, SK02/SK10 | `api/test_agents.py` | ✅ |
 | FR11 | لوحة علاقات وروابط أدلة قابلة للنقر | `/graph`, `pages/Views.tsx::GraphPage`, `EvidenceList` (افتح الشاهد) | يدوي (لقطات) | 🟡 |
 | FR12 | بدائل عند الطلب فقط | SK01 (مقترحات `note`)، لا توليد عند فتح الفصل | `api/test_agents.py::test_AT14_*` | ✅ (التوليد يتطلب مزوداً) |
 | FR13 | canon / draft / hypothesis / external | `models.CanonFact`, `/facts/{id}/approve` | `api/test_continuity.py::test_canon_requires_author_approval` | ✅ |
-| FR14 | تعارضات بشواهد ورفض وإعفاء مسبب | `services/continuity.py` (11 قاعدة), `/conflicts/*/resolve` | `api/test_continuity.py` (B, AT08, AT09, AT22) | ✅ |
+| FR14 | تعارضات بشواهد ورفض وإعفاء مسبب | `services/continuity.py` (11 قاعدة), `/conflicts/*/resolve` | `api/test_continuity.py` (B, AT08, AT09, AT22) + `test_continuity_benchmark.py` (40 حالة: دقة 1.00، استدعاء 1.00) | ✅ |
 | FR15 | بحث في المرفقات بعد الموافقة والحقوق، استشهاد بالصفحة/المقطع | `services/research.py`, `routers/research.py` | `api/test_research.py` | ✅ |
 | FR16 | تقرير تحريري منفصل لا يخلط الوقائع بالذوق | `orchestrator.editorial_report` | `api/test_agents.py::test_AT19_*` | ✅ |
 | FR17 | Diff بمبرر وقبول/رفض/تعديل | `services/proposals.py`, `pages/Proposals.tsx` | `api/test_agents.py::test_lint_patches_*`, e2e AT06 | ✅ |
@@ -41,7 +41,7 @@
 | NFR02 | حفظ محلي ≤ 1 ث | سجل محلي بعد 0.6 ث من التوقف؛ حالة الخادم منفصلة | ✅ |
 | NFR03 | لا فقد بعد تعطل المتصفح | e2e: إغلاق التبويب قبل المزامنة ثم الاستعادة | ✅ |
 | NFR04 | 150k كلمة، 1000 مشهد، 300 شخصية | 255,000 كلمة/30 فصلاً: فحص استمرارية 2.0 ث، DOCX 2.0 ث · 1,000 مشهد/300 شخصية: فحص استمرارية 2.8 ث، تشغيل A00 الكامل (21 مهارة) 14.5 ث (`test_NFR04_*`) | ✅ |
-| NFR05 | عزل البيانات، IDOR، أسرار في البيئة | `deps.py` + اختبار 15 نقطة | ✅ |
+| NFR05 | عزل البيانات، IDOR، أسرار في البيئة، تشفير التخزين | `deps.py` + اختبار 15 نقطة؛ `crypto.py` (كل الحزمة تعمل مشفّرة) `api/test_crypto.py` | ✅ |
 | NFR06 | RTL عبر Chrome/Firefox/Edge | Chromium فقط في هذه البيئة | 🟡 |
 | NFR07 | WCAG 2.2 AA | تدقيق axe-core آلي لـ 12 شاشة + الدخول في السمتين: صفر مخالفات خطيرة/حرجة (`e2e/a11y.spec.ts`) | 🟡 آلي فقط؛ التدقيق البشري وقارئ الشاشة لم يُجريا |
 | NFR08 | استرجاع النسخ الاحتياطية مجرَّب | `scripts/backup.sh` + `scripts/restore_verify.sh` (SQLite وPostgreSQL) + AT17 | ✅ |

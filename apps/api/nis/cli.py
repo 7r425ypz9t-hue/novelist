@@ -34,6 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     ca = sub.add_parser("create-admin", help="create or promote an administrator")
     ca.add_argument("email")
     sub.add_parser("demo", help="load a small original Arabic demo project (no copyrighted text)")
+    sub.add_parser("new-key", help="print a fresh NIS_MASTER_KEY (store it in the server environment)")
+    sub.add_parser("encrypt-existing", help="encrypt plaintext content rows with NIS_MASTER_KEY (idempotent)")
     a = p.parse_args(argv)
 
     if a.cmd == "migrate":
@@ -69,7 +71,50 @@ def main(argv: list[str] | None = None) -> int:
 
         migrate()
         print(load_demo())
+    elif a.cmd == "new-key":
+        from .crypto import new_key
+
+        print(new_key())
+    elif a.cmd == "encrypt-existing":
+        from .crypto import enabled
+
+        if not enabled():
+            print("NIS_MASTER_KEY is not set", file=sys.stderr)
+            return 2
+        migrate()
+        print(encrypt_existing())
     return 0
+
+
+def encrypt_existing() -> dict:
+    """Re-seal plaintext rows in place with Core UPDATEs (revision *content* is unchanged; only its storage)."""
+    import json
+
+    from sqlalchemy import text
+
+    from .crypto import PREFIX, seal
+    from .db import get_engine
+
+    targets = {"documents": ["content_json", "text_plain"], "revisions": ["content_json", "text_plain"],
+               "comments": ["body"], "source_chunks": ["content", "normalized"]}
+    done: dict = {}
+    with get_engine().begin() as conn:
+        for table, cols in targets.items():
+            n = 0
+            for row in conn.execute(text(f"SELECT id, {', '.join(cols)} FROM {table}")):  # noqa: S608 - fixed names
+                vals = {}
+                for c, v in zip(cols, row[1:], strict=True):
+                    if v is None:
+                        continue
+                    v = v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+                    if not v.startswith(PREFIX):
+                        vals[c] = seal(v)
+                if vals:
+                    sets = ", ".join(f"{c} = :{c}" for c in vals)
+                    conn.execute(text(f"UPDATE {table} SET {sets} WHERE id = :id"), {**vals, "id": row[0]})  # noqa: S608
+                    n += 1
+            done[table] = n
+    return done
 
 
 if __name__ == "__main__":

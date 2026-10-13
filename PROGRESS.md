@@ -11,11 +11,14 @@
 - [x] Tests executed: 60 backend (SQLite and PostgreSQL 16) + 2 opt-in load tests, 6 frontend unit, 4 Playwright e2e incl. axe WCAG audit (Chromium).
 - [x] NFR04 load (1,000 scenes / 300 characters) — single-pass name matcher cut the continuity scan from 11.1 s to 2.8 s.
 - [x] Demo and test fixtures use neutral original names only.
+- [x] Continuity golden set (20 planted errors + 20 clean cases, original text): precision 1.00, recall 1.00 — author-built, so optimistic.
+- [x] Hijri calendar for story time (tabular conversion, author wording kept in the label).
+- [x] Encryption at rest (AES-256-GCM, server key) for manuscript, revisions, source chunks, comments; `nis encrypt-existing` for legacy rows.
 
 Open items (TODO, not done):
 - [ ] Docker image build not executed in this environment (no Docker daemon); compose file is untested.
 - [ ] Cross-browser RTL e2e (Firefox, Edge); manual screen-reader review (automated axe audit passes).
-- [ ] Envelope encryption for private projects; Hijri/fictional calendars; HarfBuzz-based PDF with full tashkeel.
-- [ ] Embedding-based hybrid retrieval after a recall benchmark; golden continuity dataset (precision/recall).
+- [ ] Per-project keys derived from an author secret (operator-blind); fictional-world calendars; HarfBuzz-based PDF with full tashkeel.
+- [ ] Embedding-based hybrid retrieval after a recall benchmark; continuity benchmark on third-party licensed chapters.
 - [ ] Human editorial calibration for AT19 and NLQI inter-rater agreement.
 - [ ] Live call against a real model provider (adapter implemented, consent flow tested, no network call made).

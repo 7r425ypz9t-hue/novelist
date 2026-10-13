@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from .. import __version__
+from .. import __version__, crypto
 from ..agents.providers import get_provider
 from ..config import get_settings
 from ..db import get_db
@@ -46,6 +46,7 @@ def health(_: User = Depends(admin_user), db: Session = Depends(get_db)):
         "python": platform.python_version(),
         "database": {"ok": True, "latency_ms": db_ms, "engine": "sqlite" if s.is_sqlite else "postgresql"},
         "storage": {"ok": store().writable()},
+        "encryption_at_rest": crypto.enabled(),
         "provider": get_provider().describe(),
         "worker": {"active_runs": queued or 0, "inline": s.runs_inline},
         "limits": {"rate_limit_per_minute": s.rate_limit_per_minute, "max_upload_mb": s.max_upload_mb,

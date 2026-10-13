@@ -118,3 +118,18 @@ test("AT06 — an agent's deletion proposal changes nothing until the author acc
   await page.getByRole("tab", { name: "المراجعات" }).click();
   await expect(page.getByText("مقترح مقبول")).toBeVisible();
 });
+
+test("R4 — story time can be entered in the Hijri calendar", async ({ page }) => {
+  await register(page, "hijri");
+  await newNovelWithScene(page, "رواية التقويم");
+  await page.getByLabel("السنة الهجرية").fill("1377");
+  await page.getByLabel("الشهر الهجري").selectOption({ label: "رمضان" });
+  await page.getByLabel("اليوم الهجري").fill("1");
+  await page.getByRole("button", { name: "تحويل" }).click();
+  await expect(page.getByLabel("وصف الزمن")).toHaveValue("1 رمضان 1377 هـ");
+  const t = Number(await page.getByLabel("زمن القصة (سنة)").inputValue());
+  expect(t).toBeGreaterThan(1958.2);
+  expect(t).toBeLessThan(1958.4); // ≈ 21 March 1958
+  await page.getByRole("button", { name: "حفظ المصفوفة" }).click();
+  await expect(page.getByText("حُفظت مصفوفة المشهد")).toBeVisible();
+});

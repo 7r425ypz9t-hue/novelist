@@ -13,6 +13,8 @@ os.environ["NIS_RATE_LIMIT_PER_MINUTE"] = "0"
 os.environ["NIS_AUTH_RATE_LIMIT_PER_MINUTE"] = "0"
 os.environ["NIS_LLM_PROVIDER"] = "disabled"
 os.environ["NIS_SERVE_SPA"] = "false"
+# The whole suite runs with encryption at rest switched on (fixed test-only key, never used elsewhere).
+os.environ["NIS_MASTER_KEY"] = "dGVzdC1vbmx5LWtleS0tbmV2ZXItdXNlLWl0LTMyYiE="
 
 from fastapi.testclient import TestClient  # noqa: E402
 

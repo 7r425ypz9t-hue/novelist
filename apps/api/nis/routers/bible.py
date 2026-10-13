@@ -280,6 +280,18 @@ def delete_fact(fid: uuid.UUID, acc: Access = Depends(project_access), db: Sessi
     db.commit()
 
 
+# ── calendars (story time in the author's calendar)
+@router.get("/calendar/convert")
+def calendar_convert(calendar: str, year: int, month: int | None = None, day: int | None = None,
+                     acc: Access = Depends(project_access)):
+    from ..calendars import convert
+
+    try:
+        return convert(calendar, year, month, day)
+    except ValueError as e:
+        raise bad_request(str(e)) from e
+
+
 # ── views
 @router.get("/timeline")
 def timeline(acc: Access = Depends(project_access), db: Session = Depends(get_db)):
