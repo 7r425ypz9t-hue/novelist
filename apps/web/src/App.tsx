@@ -106,6 +106,9 @@ function Shell({ children, project, flush }: { children: ReactNode; project?: bo
     qc.clear();
     nav("/");
   };
+  useEffect(() => {
+    document.title = project && proj.data ? `${proj.data.title} — كاتب` : "كاتب";
+  }, [project, proj.data]);
   const provider = catalog.data?.provider;
   const d = dash.data;
   const link = (to: string, icon: string, label: string, badge?: ReactNode) => (
@@ -120,7 +123,7 @@ function Shell({ children, project, flush }: { children: ReactNode; project?: bo
       <header className="topbar">
         <div className="brand">
           <BrandMark />
-          <div>كاتب<small>KATEB · STUDIO</small></div>
+          <div>كاتب<small>مساحة الروائي العربي</small></div>
         </div>
         {project && proj.data && (
           <div className="row" style={{ gap: 6 }}>

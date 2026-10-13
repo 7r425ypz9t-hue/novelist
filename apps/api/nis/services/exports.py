@@ -288,6 +288,8 @@ def to_docx(book: Book) -> bytes:
     d.core_properties.title = book.title
     d.core_properties.author = book.author or ""
     d.core_properties.language = book.language
+    d.core_properties.comments = "أُنشئ بتطبيق «كاتب»"
+    d.core_properties.last_modified_by = "كاتب"
     d.save(buf)
     return buf.getvalue()
 
@@ -299,10 +301,10 @@ def _pdf_fonts() -> tuple[str, str]:
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
 
-    if "NIS-Naskh" not in pdfmetrics.getRegisteredFontNames():
-        pdfmetrics.registerFont(TTFont("NIS-Naskh", str(FONT_DIR / "NotoNaskhArabic-Regular.ttf")))
-        pdfmetrics.registerFont(TTFont("NIS-Naskh-Bold", str(FONT_DIR / "NotoNaskhArabic-Bold.ttf")))
-    return "NIS-Naskh", "NIS-Naskh-Bold"
+    if "Kateb-Naskh" not in pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(TTFont("Kateb-Naskh", str(FONT_DIR / "NotoNaskhArabic-Regular.ttf")))
+        pdfmetrics.registerFont(TTFont("Kateb-Naskh-Bold", str(FONT_DIR / "NotoNaskhArabic-Bold.ttf")))
+    return "Kateb-Naskh", "Kateb-Naskh-Bold"
 
 
 def _shape(text: str) -> str:
@@ -422,6 +424,7 @@ def to_pdf_reportlab(book: Book) -> bytes:
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A5, pageCompression=1)
     c.setTitle(book.title)
+    c.setCreator("كاتب")
     c.setAuthor(book.author or "")
     c.setSubject("Kateb (كاتب) export")
 
@@ -589,7 +592,7 @@ def to_epub(book: Book, book_id: str | None = None) -> bytes:
         f'<dc:identifier id="bookid">{html.escape(uid)}</dc:identifier>'
         f"<dc:title>{html.escape(book.title)}</dc:title><dc:language>{book.language}</dc:language>"
         f"<dc:creator>{html.escape(book.author or 'مجهول')}</dc:creator>"
-        f'<meta property="dcterms:modified">{now}</meta></metadata>'
+        f'<meta property="dcterms:modified">{now}</meta><meta name="generator" content="كاتب"/></metadata>'
         '<manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>'
         '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
         '<item id="title" href="title.xhtml" media-type="application/xhtml+xml"/>'

@@ -30,7 +30,11 @@ const saveState = (page: Page) => page.getByTestId("save-state");
 
 test("AT01/AT02 — create, write mixed RTL/LTR text, autosave, persists after re-login", async ({ page, context }) => {
   const email = await register(page, "author");
+  await expect(page).toHaveTitle("كاتب");
+  await expect(page.locator(".brand")).toContainText("كاتب");
+  await expect(page.locator("body")).not.toContainText("ذكاء الرواية");
   await newNovelWithScene(page, "رواية الشاطئ");
+  await expect(page).toHaveTitle("رواية الشاطئ — كاتب");
   const editor = page.locator(".ProseMirror");
   await editor.click();
   await page.keyboard.type("قال نادر: «سأصل في 10:30 مع John إلى Port-Said» ثم مضى، أليس كذلك؟");

@@ -45,7 +45,7 @@ def load_demo() -> str:
             db.flush()
         p = Project(owner_id=u.id, title="ملح الضفة الشمالية", genre="رواية اجتماعية", word_goal=60000,
                     logline="صبيٌّ يفقد أباه في البحر ثم يعود إليه رباناً ليكتشف أن الميناء لم يعد يعرفه.",
-                    description="مشروع تجريبي أصلي لعرض قدرات الاستوديو.")
+                    description="مشروع تجريبي أصلي لعرض قدرات «كاتب».")
         db.add(p)
         db.flush()
         db.add(Membership(user_id=u.id, project_id=p.id, role="owner"))

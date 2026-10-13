@@ -1,4 +1,4 @@
-/* Thin typed client over the NIS REST API. Errors are RFC 9457 Problem Details. */
+/* Thin typed client over the «كاتب» REST API. Errors are RFC 9457 Problem Details. */
 
 export class ApiError extends Error {
   status: number;

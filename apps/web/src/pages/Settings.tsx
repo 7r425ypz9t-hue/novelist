@@ -103,7 +103,7 @@ export function SettingsPage() {
           <div className="grid g2">
             <div className="stack">
               <strong>تصدير كامل البيانات</strong>
-              <div className="dim">أرشيف ZIP مقروء: المخطوط، كل المراجعات، الكتاب المرجعي، المصادر الأصلية، الاستشهادات، المقترحات — مع بصمات SHA-256. يمكن استعادته على أي خادم NIS.</div>
+              <div className="dim">أرشيف ZIP مقروء: المخطوط، كل المراجعات، الكتاب المرجعي، المصادر الأصلية، الاستشهادات، المقترحات — مع بصمات SHA-256. يمكن استعادته في أي نسخة من «كاتب».</div>
               <button className="btn" disabled={!owner} onClick={() => download(`/v1/projects/${pid}/data-export`, "POST").catch(toast.error)}>تنزيل الأرشيف</button>
             </div>
             <div className="stack">

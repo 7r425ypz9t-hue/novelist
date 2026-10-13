@@ -98,7 +98,7 @@ def book_html(book: Book) -> str:
              + (f"<p>{html.escape(book.author)}</p>" if book.author else "") + "</section>")
     nav = f'<nav><h1>المحتويات</h1><ol>{"".join(toc)}</ol></nav>' if toc else ""
     return (f'<!doctype html><html lang="{book.language}" dir="{"rtl" if rtl else "ltr"}"><head><meta charset="utf-8">'
-            f"<title>{html.escape(book.title)}</title><meta name=author content=\"{html.escape(book.author)}\">"
+            f"<title>{html.escape(book.title)}</title><meta name=author content=\"{html.escape(book.author)}\"><meta name=generator content=\"كاتب\">"
             f"<style>{css}</style></head><body>{title}{nav}{''.join(body)}</body></html>")
 
 

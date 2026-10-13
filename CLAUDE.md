@@ -1,4 +1,4 @@
-# Repository engineering instructions — NIS
+# Repository engineering instructions — «كاتب» (Kateb; internal package name: nis)
 
 Read `docs/spec/*` (original requirements), `docs/SPEC_REVIEW.md` (approved deviations) and `docs/traceability.md` before changing behaviour. Arabic RTL is first-class.
 
