@@ -43,6 +43,10 @@ test("AT01/AT02 — create, write mixed RTL/LTR text, autosave, persists after r
   // Arabic paragraph is rendered right-to-left even though it contains Latin runs and digits
   const dir = await editor.locator("p").first().evaluate((el) => getComputedStyle(el).direction);
   expect(dir).toBe("rtl");
+  // owner typography (D-18): manuscript text 14px, line spacing 1.5; tagline «استديو الرواية»
+  const type = await editor.evaluate((el) => { const c = getComputedStyle(el); return [c.fontSize, c.lineHeight]; });
+  expect(type).toEqual(["14px", "21px"]);
+  await expect(page.locator(".brand")).toContainText("استديو الرواية");
   const url = page.url();
   // new session
   await context.clearCookies();

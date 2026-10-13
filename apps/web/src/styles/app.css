@@ -23,7 +23,7 @@
   --fs-h2: clamp(15.5px, 0.6vw + 10.5px, 19px);
   --fs-h1: clamp(21px, 1.15vw + 10px, 30px);
   --fs-paper: 14px;
-  --paper-leading: 1;
+  --paper-leading: 1.5;
   --topbar-h: 64px;
 
   --bg: #F3FBF8;
@@ -299,7 +299,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 .tree-node.drop { box-shadow: inset 0 -2px 0 var(--gold); }
 
 /* ── diff ── */
-.diff { font-family: var(--font-text); font-size: clamp(15px, 0.4vw + 11.5px, 17.5px); line-height: 2; white-space: pre-wrap; background: var(--paper); color: var(--paper-text); padding: 14px 18px; border-radius: var(--radius-sm); border: 1px solid var(--line); max-height: 52vh; overflow: auto; }
+.diff { font-family: var(--font-text); font-size: var(--fs-paper); line-height: calc(var(--paper-leading) + .3); white-space: pre-wrap; background: var(--paper); color: var(--paper-text); padding: 14px 18px; border-radius: var(--radius-sm); border: 1px solid var(--line); max-height: 52vh; overflow: auto; }
 .diff ins { background: var(--ins); text-decoration: none; border-radius: 3px; }
 .diff del { background: var(--del); border-radius: 3px; }
 .quote { font-family: var(--font-text); font-size: clamp(14px, 0.35vw + 11px, 16px); background: var(--panel-2); border-inline-start: 3px solid var(--gold); padding: 6px 10px; border-radius: 4px; }
