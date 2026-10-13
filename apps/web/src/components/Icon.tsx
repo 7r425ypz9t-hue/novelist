@@ -61,9 +61,11 @@ export function Icon({ name, size = 18, className }: { name: keyof typeof P | st
 export function BrandMark({ size = 30 }: { size?: number }) {
   return (
     <svg className="brand-mark" width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <rect width="64" height="64" rx="14" fill="#1F4E79" />
-      <path d="M18 46V18l28 28V18" fill="none" stroke="#B8860B" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="46" cy="18" r="4" fill="#E6EDF5" />
+      <rect width="64" height="64" rx="14" fill="#84DCC6" />
+      {/* a pen nib — «كاتب» */}
+      <path d="M32 10 L45 33 L32 54 L19 33 Z" fill="#0F2E28" />
+      <path d="M32 33 V54" stroke="#84DCC6" strokeWidth="2.5" />
+      <circle cx="32" cy="31" r="4.5" fill="#FF686B" />
     </svg>
   );
 }

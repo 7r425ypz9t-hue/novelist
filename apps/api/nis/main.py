@@ -53,8 +53,8 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     s = get_settings()
     app = FastAPI(
-        title="Novel Intelligence Studio API", version=__version__, lifespan=lifespan,
-        description="واجهة برمجية لاستوديو ذكاء الرواية — عربي أولاً، سيادة المؤلف، مقترحات لا تعديلات قسرية.",
+        title="Kateb (كاتب) API", version=__version__, lifespan=lifespan,
+        description="واجهة برمجية لتطبيق «كاتب» — عربي أولاً، سيادة المؤلف، مقترحات لا تعديلات قسرية.",
         openapi_url="/v1/openapi.json", docs_url="/v1/docs", redoc_url=None,
     )
     errors.install(app)

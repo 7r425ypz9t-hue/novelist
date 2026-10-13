@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nis-api"
 version = "0.1.0"
-description = "Novel Intelligence Studio — FastAPI backend (Arabic-first novel writing studio)"
+description = "Kateb (كاتب) — FastAPI backend of the Arabic-first novel writing studio"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115",

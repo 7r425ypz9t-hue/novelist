@@ -48,7 +48,7 @@ export function SourcesPage() {
     <>
       <div className="page-head">
         <div className="grow"><div className="eyebrow">RESEARCH · A05</div><h1>المصادر والشواهد</h1>
-          <div className="muted">بحث مقيّد بمصادر هذا المشروع المرخّصة فقط. النص المسترجَع بيانات لا تعليمات؛ وعند ضعف الدليل: «غير متحقق».</div></div>
+          <div className="muted">بحث محلي مقيّد بمصادر هذا المشروع المرخّصة: يطابق الصيغ الصرفية والمرادفات الشائعة والأسماء البديلة من الكتاب المرجعي، ويبيّن كل توسعة. النص المسترجَع بيانات لا تعليمات؛ وعند ضعف الدليل: «غير متحقق».</div></div>
         {can && <button className="btn primary" onClick={() => setUpload(true)}><Icon name="upload" size={16} /> رفع مصدر</button>}
       </div>
 
@@ -68,6 +68,13 @@ export function SourcesPage() {
                     <span className="row"><span className="badge">تغطية {Math.round(h.term_coverage * 100)}%</span>
                       {h.suspicious_instructions.length > 0 && <span className="badge bad" title={h.suspicious_instructions.join(" | ")}>يحوي عبارات تشبه أوامر — بيانات فقط</span>}</span>
                   </div>
+                  {!!h.matched_via?.length && (
+                    <div className="pill-list" style={{ marginTop: 6 }}>
+                      {h.matched_via.map((m, i) => (
+                        <span key={i} className="badge info">{({ morph: "تطابق صرفي", alias: "اسم بديل", synonym: "مرادف" } as const)[m.kind]}: {m.term} ← {m.matched}</span>
+                      ))}
+                    </div>
+                  )}
                   <div className="quote" style={{ marginTop: 6 }}>{h.content}</div>
                   <button className="btn sm" style={{ marginTop: 6 }} onClick={() => cite(h)}>اربط الادعاء بهذا المقطع</button>
                 </div>

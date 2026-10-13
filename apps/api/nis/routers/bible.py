@@ -12,7 +12,7 @@ from ..db import get_db
 from ..deps import Access, project_access
 from ..errors import bad_request, not_found
 from ..models import CanonFact, Character, EntityEdge, Event, Node, Place, utcnow
-from ..schemas import CharacterIn, CharacterPatch, EdgeIn, EventIn, EventPatch, FactIn, PlaceIn, PlacePatch
+from ..schemas import CalendarsIn, CharacterIn, CharacterPatch, EdgeIn, EventIn, EventPatch, FactIn, PlaceIn, PlacePatch
 from ..services.manuscript import labels, ordered_nodes
 
 router = APIRouter(prefix="/v1/projects/{project_id}", tags=["story-bible"])
@@ -287,9 +287,27 @@ def calendar_convert(calendar: str, year: int, month: int | None = None, day: in
     from ..calendars import convert
 
     try:
-        return convert(calendar, year, month, day)
+        return convert(calendar, year, month, day, custom=acc.project.calendars or [])
     except ValueError as e:
         raise bad_request(str(e)) from e
+
+
+@router.get("/calendars")
+def list_calendars(acc: Access = Depends(project_access)):
+    return {"builtin": [{"id": "hijri", "name": "الهجري"}, {"id": "gregorian", "name": "الميلادي"}],
+            "custom": acc.project.calendars or []}
+
+
+@router.put("/calendars")
+def set_calendars(body: CalendarsIn, acc: Access = Depends(project_access), db: Session = Depends(get_db)):
+    acc.require("bible")
+    ids = [c.id for c in body.calendars]
+    if len(set(ids)) != len(ids) or {"hijri", "gregorian"} & set(ids):
+        raise bad_request("معرّفات التقاويم يجب أن تكون فريدة ولا تطابق hijri أو gregorian.")
+    acc.project.calendars = [c.model_dump() for c in body.calendars]
+    audit.record(db, "calendars.update", actor_id=acc.user.id, project_id=acc.project.id, meta={"count": len(ids)})
+    db.commit()
+    return {"custom": acc.project.calendars}
 
 
 # ── views

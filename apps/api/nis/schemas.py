@@ -264,3 +264,16 @@ class WeightsIn(BaseModel):
 class ImportCommitIn(BaseModel):
     manuscript_id: str | None = None
     chapters: list[dict[str, Any]] = Field(min_length=1, max_length=2000)
+
+
+class CalendarDef(BaseModel):
+    id: str = Field(pattern=r"^[a-z][a-z0-9_-]{1,31}$")
+    name: str = Field(min_length=1, max_length=80)
+    suffix: str = Field(default="", max_length=20)
+    epoch: float = 0.0
+    ratio: float = Field(default=1.0, gt=0, le=1000)
+    months: list[str] = Field(default=[], max_length=40)
+
+
+class CalendarsIn(BaseModel):
+    calendars: list[CalendarDef] = Field(max_length=12)

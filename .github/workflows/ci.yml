@@ -50,16 +50,23 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     needs: [api, web]
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, msedge]   # NFR06: RTL across Chrome, Firefox and Edge
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - uses: actions/setup-node@v4
         with: { node-version: "22" }
-      - run: pip install -e "apps/api[dev]"
+      - run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0
+      - run: pip install -e "apps/api[dev,pdf]"
       - working-directory: apps/web
+        env:
+          E2E_BROWSERS: ${{ matrix.browser }}
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps ${{ matrix.browser }}
           npx vite build
           NIS_PYTHON=python npx playwright test

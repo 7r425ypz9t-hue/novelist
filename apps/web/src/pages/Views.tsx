@@ -119,19 +119,19 @@ export function GraphPage() {
               {edges.map((e: any) => {
                 const a = nodes[idx.get(e.from) as number], b = nodes[idx.get(e.to) as number];
                 const on = !sel || e.from === sel || e.to === sel;
-                return <line key={e.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={e.status === "canon" ? "var(--gold)" : "var(--line-strong)"}
+                return <line key={e.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={e.status === "canon" ? "var(--p-coral)" : "var(--line-strong)"}
                   strokeWidth={on ? 1.6 : 0.6} opacity={on ? 1 : 0.25} strokeDasharray={e.status === "hypothesis" ? "4 4" : undefined} />;
               })}
               {nodes.map((n: any) => (
                 <g key={n.id} onClick={() => setSel(sel === n.id ? null : n.id)} style={{ cursor: "pointer" }}>
-                  <circle cx={n.x} cy={n.y} r={n.type === "character" ? 13 : 10} fill={n.type === "character" ? "var(--brand-blue)" : "var(--panel-3)"}
+                  <circle cx={n.x} cy={n.y} r={n.type === "character" ? 13 : 10} fill={n.type === "character" ? "var(--p-teal)" : "var(--p-salmon)"}
                     stroke={sel === n.id ? "var(--gold)" : "var(--accent)"} strokeWidth={sel === n.id ? 3 : 1.5} />
                   <text x={n.x} y={n.y + 26} textAnchor="middle" style={{ fill: "var(--text)", fontSize: 12 }}>{n.label}</text>
                 </g>
               ))}
             </svg>
           )}
-          <div className="legend"><span><i style={{ background: "var(--brand-blue)" }} />شخصية</span><span><i style={{ background: "var(--panel-3)" }} />مكان</span><span><i style={{ background: "var(--gold)" }} />علاقة معتمدة</span></div>
+          <div className="legend"><span><i style={{ background: "var(--p-teal)" }} />شخصية</span><span><i style={{ background: "var(--p-salmon)" }} />مكان</span><span><i style={{ background: "var(--p-coral)" }} />علاقة معتمدة</span></div>
         </Card>
         <Card title={sel ? `روابط: ${nodes.find((n: any) => n.id === sel)?.label}` : "الروابط"} icon="link">
           {!sel ? <Empty title="اختر عقدة" /> : !selEdges.length ? <Empty title="لا روابط" /> : (

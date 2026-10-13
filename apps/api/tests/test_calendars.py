@@ -28,3 +28,15 @@ def test_year_only_is_approximate_midpoint(writer):
     api = writer.get(f"/v1/projects/{p['id']}/calendar/convert", params={"calendar": "hijri", "year": 1377, "month": 9, "day": 1}).json()
     assert api["uncertainty"] == "exact" and api["label"] == "1 رمضان 1377 هـ" and "يوماً أو يومين" in api["note"]
     assert writer.get(f"/v1/projects/{p['id']}/calendar/convert", params={"calendar": "hijri", "year": 1377, "month": 13}).status_code == 400
+
+
+def test_fictional_world_calendar(writer):
+    p = writer.project()
+    cal = {"id": "flood", "name": "تقويم الطوفان", "suffix": "ط", "epoch": 1200, "ratio": 2,
+           "months": ["الندى", "الريح", "الملح", "الرماد"]}
+    assert writer.put(f"/v1/projects/{p['id']}/calendars", json={"calendars": [cal]}).status_code == 200
+    r = writer.get(f"/v1/projects/{p['id']}/calendar/convert", params={"calendar": "flood", "year": 10, "month": 3}).json()
+    assert r["label"] == "الملح 10 ط" and r["story_time"] == 1200 + (9 + 0.5) * 2 and r["uncertainty"] == "exact"
+    assert writer.get(f"/v1/projects/{p['id']}/calendar/convert", params={"calendar": "flood", "year": 1, "month": 9}).status_code == 400
+    assert writer.put(f"/v1/projects/{p['id']}/calendars", json={"calendars": [{**cal, "id": "hijri"}]}).status_code == 400
+    assert writer.get(f"/v1/projects/{p['id']}/calendars").json()["custom"][0]["name"] == "تقويم الطوفان"

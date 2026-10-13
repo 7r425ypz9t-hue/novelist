@@ -47,7 +47,26 @@ HIJRI_MONTHS = ["محرم", "صفر", "ربيع الأول", "ربيع الآخ�
                 "رمضان", "شوال", "ذو القعدة", "ذو الحجة"]
 
 
-def convert(calendar: str, year: int, month: int | None = None, day: int | None = None) -> dict:
+def convert_custom(cal: dict, year: float, month: int | None = None) -> dict:
+    """A fictional calendar maps linearly onto the story axis: axis = epoch + (year - 1 + month_fraction) × ratio.
+    `epoch` is the axis year of «year 1», `ratio` how many axis years one calendar year lasts."""
+    months = cal.get("months") or []
+    if month is not None and months and not 1 <= month <= len(months):
+        raise ValueError("رقم الشهر خارج تقويم هذا العالم")
+    frac = ((month - 1) / len(months)) if (month and months) else 0.5
+    axis = float(cal.get("epoch", 0)) + (year - 1 + frac) * float(cal.get("ratio", 1) or 1)
+    y = int(year) if float(year).is_integer() else year
+    label = (f"{months[month - 1]} {y} {cal.get('suffix', '')}" if month and months else f"{y} {cal.get('suffix', '')}").strip()
+    return {"story_time": round(axis, 4), "gregorian": None, "label": label,
+            "uncertainty": "exact" if month else "approx",
+            "note": f"تقويم «{cal.get('name', '')}»: سنة 1 = {cal.get('epoch', 0)} على محور القصة، كل سنة = {cal.get('ratio', 1)}."}
+
+
+def convert(calendar: str, year: int, month: int | None = None, day: int | None = None,
+            custom: list[dict] | None = None) -> dict:
+    for cal in custom or []:
+        if cal.get("id") == calendar:
+            return convert_custom(cal, year, month)
     if calendar == "hijri":
         g = hijri_to_gregorian(year, month or 1, day or 1)
         label = f"{day} {HIJRI_MONTHS[(month or 1) - 1]} {year} هـ" if day and month else (

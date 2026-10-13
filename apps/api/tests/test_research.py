@@ -135,3 +135,23 @@ def test_retrieval_is_project_isolated(writer, other):
     p2 = other.project()
     r = other.post(f"/v1/projects/{p2['id']}/research/query", json={"question": "افتتاح الميناء 1958"}).json()
     assert r["hits"] == []
+
+
+def test_local_expansion_morphology_synonyms_aliases_are_transparent(writer):
+    p = writer.project()
+    _upload(writer, p["id"], "port.txt", HISTORY.encode())
+    # morphology: «استمرار» finds the passage that says «استمرت»
+    r = writer.post(f"/v1/projects/{p['id']}/research/query", json={"question": "استمرار الردم"}).json()
+    assert r["verdict"] == "evidence_found" and "1958" in r["hits"][0]["content"]
+    assert {"term": "استمرار", "matched": "استمرت", "kind": "morph"} in r["hits"][0]["matched_via"]
+    # synonym: «المرفأ الجديد» reaches «الميناء الجديد», and the expansion is reported
+    r = writer.post(f"/v1/projects/{p['id']}/research/query", json={"question": "المرفأ الجديد"}).json()
+    assert "1958" in r["hits"][0]["content"]
+    assert any(x["kind"] == "synonym" for x in r["expansions"]["مرفا"])
+    # synonyms alone are never evidence
+    r = writer.post(f"/v1/projects/{p['id']}/research/query", json={"question": "المرفأ"}).json()
+    assert r["verdict"] == "insufficient_evidence"
+    # Story Bible alias: a place searched by its other name
+    writer.post(f"/v1/projects/{p['id']}/places", json={"name": "السوق القديم", "aliases": ["سوق الصيادين"]})
+    r = writer.post(f"/v1/projects/{p['id']}/research/query", json={"question": "الصيادين يبيعون السمك"}).json()
+    assert r["verdict"] == "evidence_found" and "السوق القديم" in r["hits"][0]["content"]

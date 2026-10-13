@@ -82,8 +82,8 @@ function Pipeline({ pipeline, agents }: { pipeline: string[][]; agents: any[] })
   return (
     <svg className="chart" viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="سلسلة تسليم الوكلاء">
       <g>
-        <rect x={W - colW + 10} y={H / 2 - 20} width={colW - 30} height={40} rx={8} fill="var(--brand-blue)" />
-        <text x={W - colW / 2 - 5} y={H / 2 + 5} textAnchor="middle" style={{ fill: "#fff", fontSize: 12 }}>A00 رئيس التحرير</text>
+        <rect x={W - colW + 10} y={H / 2 - 20} width={colW - 30} height={40} rx={8} fill="var(--primary)" />
+        <text x={W - colW / 2 - 5} y={H / 2 + 5} textAnchor="middle" style={{ fill: "var(--on-primary)", fontSize: 12 }}>A00 رئيس التحرير</text>
       </g>
       {pipeline.map((stage, i) => {
         const cx = W - colW * (i + 1.5);

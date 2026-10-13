@@ -122,9 +122,9 @@ test("AT06 — an agent's deletion proposal changes nothing until the author acc
 test("R4 — story time can be entered in the Hijri calendar", async ({ page }) => {
   await register(page, "hijri");
   await newNovelWithScene(page, "رواية التقويم");
-  await page.getByLabel("السنة الهجرية").fill("1377");
-  await page.getByLabel("الشهر الهجري").selectOption({ label: "رمضان" });
-  await page.getByLabel("اليوم الهجري").fill("1");
+  await page.getByLabel("السنة في التقويم").fill("1377");
+  await page.getByLabel("الشهر في التقويم").selectOption({ label: "رمضان" });
+  await page.getByLabel("اليوم في التقويم").fill("1");
   await page.getByRole("button", { name: "تحويل" }).click();
   await expect(page.getByLabel("وصف الزمن")).toHaveValue("1 رمضان 1377 هـ");
   const t = Number(await page.getByLabel("زمن القصة (سنة)").inputValue());

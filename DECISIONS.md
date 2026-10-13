@@ -19,3 +19,6 @@ Implementation decisions (2026-10-13, rationale in docs/SPEC_REVIEW.md §7):
 - D-11 Encryption at rest with one server key (AES-256-GCM, `enc:v1:` prefix, legacy plaintext readable); per-project author keys deferred.
 - D-12 Story time stays a Gregorian decimal axis; Hijri input converted with the tabular calendar, original wording kept in the label.
 - D-13 PDF engine: WeasyPrint (optional extra `pdf`, needs system Pango) preferred; ReportLab fallback; D-09's tashkeel limitation now applies only to the fallback.
+- D-15 Product renamed «كاتب» (Kateb) in every user-facing surface; internal identifiers (`nis` package, `NIS_*` env vars, `nis` CLI) unchanged for deployment compatibility.
+- D-14 Retrieval stays local: BM25 + morphological neighbours (bigram Dice ≥ 0.62) + curated synonyms + Story Bible aliases, each expansion reported; embeddings deferred by owner decision.
+- D-16 Owner palette adopted; light theme default. Per-project operator-blind keys declined by owner.

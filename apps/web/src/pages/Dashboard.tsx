@@ -42,9 +42,9 @@ export function DashboardPage() {
           {Object.keys(scenes).length ? (
             <Donut parts={[
               { label: "فكرة", value: scenes.idea || 0, color: "var(--text-3)" },
-              { label: "مسودة", value: scenes.draft || 0, color: "var(--accent)" },
-              { label: "منقّح", value: scenes.revised || 0, color: "var(--gold)" },
-              { label: "نهائي", value: scenes.final || 0, color: "var(--ok)" },
+              { label: "مسودة", value: scenes.draft || 0, color: "var(--p-teal)" },
+              { label: "منقّح", value: scenes.revised || 0, color: "var(--p-salmon)" },
+              { label: "نهائي", value: scenes.final || 0, color: "var(--p-coral)" },
             ]} />
           ) : <Empty title="لا مشاهد بعد" />}
         </Card>

@@ -34,7 +34,7 @@ export function LoginPage() {
         <div className="card-b stack" style={{ padding: 28 }}>
           <div style={{ textAlign: "center" }}>
             <span className="hero-ring" style={{ display: "inline-block" }}><BrandMark size={56} /></span>
-            <h1 id="login-title">استوديو ذكاء الرواية</h1>
+            <h1 id="login-title">كاتب</h1>
             <p className="muted">مساحة الروائي العربي: كتابة، ذاكرة، تحقق، ونقد — والقرار الأخير لك.</p>
           </div>
           {mode === "register" && (

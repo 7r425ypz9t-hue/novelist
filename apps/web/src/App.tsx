@@ -93,7 +93,7 @@ function Shell({ children, project, flush }: { children: ReactNode; project?: bo
   const catalog = useQuery<any>({ queryKey: ["catalog"], queryFn: () => api("/v1/agents/catalog"), staleTime: 60_000 });
   const dash = useQuery<any>({ queryKey: ["dashboard", pid], queryFn: () => api(`/v1/projects/${pid}/dashboard`), enabled: !!project && !!pid });
   const pending = useQuery({ queryKey: ["journal-count"], queryFn: journalCount, refetchInterval: 4000 });
-  const [theme, setTheme] = useState(document.documentElement.dataset.theme || "dark");
+  const [theme, setTheme] = useState(document.documentElement.dataset.theme || "light");
   const toggleTheme = () => {
     const t = theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = t;
@@ -120,7 +120,7 @@ function Shell({ children, project, flush }: { children: ReactNode; project?: bo
       <header className="topbar">
         <div className="brand">
           <BrandMark />
-          <div>استوديو ذكاء الرواية<small>NIS · CONTROL</small></div>
+          <div>كاتب<small>KATEB · STUDIO</small></div>
         </div>
         {project && proj.data && (
           <div className="row" style={{ gap: 6 }}>

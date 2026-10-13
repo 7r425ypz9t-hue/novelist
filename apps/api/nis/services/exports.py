@@ -185,7 +185,7 @@ def to_docx(book: Book) -> bytes:
         st = d.styles[name]
         st.font.name = FONT_NAME
         st.font.size = Pt(size)
-        st.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+        st.font.color.rgb = RGBColor(0x14, 0x6B, 0x58)  # deep teal of the owner palette (print-safe)
         set_run_fonts(st.element, size, bold=True)
     if rtl:
         sect = d.sections[0]._sectPr
@@ -423,7 +423,7 @@ def to_pdf_reportlab(book: Book) -> bytes:
     c = canvas.Canvas(buf, pagesize=A5, pageCompression=1)
     c.setTitle(book.title)
     c.setAuthor(book.author or "")
-    c.setSubject("Novel Intelligence Studio export")
+    c.setSubject("Kateb (كاتب) export")
 
     def draw_center(text: str, font: str, size: float, yy: float) -> None:
         s = _shape(text)

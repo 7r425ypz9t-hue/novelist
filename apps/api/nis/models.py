@@ -83,6 +83,8 @@ class Project(TimestampMixin, Base):
     word_goal: Mapped[int] = mapped_column(Integer, default=0)
     ai_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     nlqi_weights: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    # Fictional-world calendars: [{id, name, suffix, epoch, ratio, months[]}] (docs/SPEC_REVIEW.md R4)
+    calendars: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, default=list, nullable=True)
 
 
 class Membership(TimestampMixin, Base):

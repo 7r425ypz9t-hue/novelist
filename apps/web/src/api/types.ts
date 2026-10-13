@@ -71,4 +71,5 @@ export interface Source {
 export interface Hit {
   chunk_id: string; source_id: string; source_title: string; locator: string; page: number | null; score: number;
   term_coverage: number; content: string; suspicious_instructions: string[];
+  matched_via?: { term: string; matched: string; kind: "morph" | "alias" | "synonym" }[];
 }

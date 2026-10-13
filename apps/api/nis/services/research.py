@@ -160,8 +160,64 @@ MIN_COVERAGE = 0.6
 MIN_MATCHED = 2
 
 
+# Local "semantic-lite" expansion (no model, no network — docs/SPEC_REVIEW.md D-14):
+# 1) morphological neighbours: vocabulary terms whose character bigrams overlap strongly (افتتاح ~ افتتح);
+# 2) a small curated Arabic synonym lexicon for recurring research vocabulary;
+# 3) the project's own Story Bible aliases (a place or character searched by any of its names).
+SYNONYM_GROUPS = [
+    "ميناء مرفا مرسى", "سفينه مركب باخره قارب", "مدينه بلده حاضره", "حرب معركه قتال", "ملك سلطان حاكم امير",
+    "مسجد جامع", "بيت منزل دار", "طريق درب سبيل", "سوق متجر", "نهر واد", "صحراء باديه", "قريه ضيعه",
+    "رحله سفر", "افتتاح تدشين", "وفاه موت رحيل", "زواج عرس", "مدرسه كتاب", "حصار طوق",
+]
+_SYN: dict[str, set[str]] = {}
+for _g in SYNONYM_GROUPS:
+    _stems = set(search_tokens(_g))
+    for _w in _stems:
+        _SYN.setdefault(_w, set()).update(_stems - {_w})
+
+FUZZY_MIN = 0.62
+
+
+def _bigrams(w: str) -> set[str]:
+    return {w[i:i + 2] for i in range(len(w) - 1)}
+
+
+def _dice(a: str, b: str) -> float:
+    x, y = _bigrams(a), _bigrams(b)
+    return 2 * len(x & y) / (len(x) + len(y)) if x and y else 0.0
+
+
+def _alias_expansions(db: Session, project_id: uuid.UUID) -> dict[str, set[str]]:
+    from ..models import Character, Place
+
+    out: dict[str, set[str]] = {}
+    rows = [(c.canonical_name, c.aliases or []) for c in db.scalars(select(Character).where(Character.project_id == project_id))]
+    rows += [(p.name, p.aliases or []) for p in db.scalars(select(Place).where(Place.project_id == project_id))]
+    for name, aliases in rows:
+        stems = {t for n in [name, *aliases] for t in search_tokens(n)}
+        for t in stems:
+            out.setdefault(t, set()).update(stems - {t})
+    return out
+
+
+def expand_terms(q: list[str], vocab: set[str], aliases: dict[str, set[str]]) -> dict[str, list[tuple[str, float, str]]]:
+    """query term → [(variant, weight, kind)] with kind in exact | morph | alias | synonym."""
+    out: dict[str, list[tuple[str, float, str]]] = {}
+    for t in q:
+        vs = [(t, 1.0, "exact")]
+        if len(t) >= 3:
+            morph = sorted(((v, _dice(t, v)) for v in vocab if v != t and abs(len(v) - len(t)) <= 2 and v[:1] == t[:1]),
+                           key=lambda x: -x[1])
+            vs += [(v, 0.75, "morph") for v, d in morph[:3] if d >= FUZZY_MIN]
+        vs += [(a, 0.9, "alias") for a in aliases.get(t, ()) if a in vocab]
+        vs += [(syn, 0.6, "synonym") for syn in _SYN.get(t, ()) if syn in vocab]
+        out[t] = vs
+    return out
+
+
 def search(db: Session, project_id: uuid.UUID, query: str, k: int = 6) -> dict[str, Any]:
-    """Project-scoped BM25 over normalized/stemmed tokens. Only usable (licensed + consented) sources."""
+    """Project-scoped BM25 over normalized/stemmed tokens, with transparent local expansion.
+    Only usable (licensed + consented) sources are searched."""
     q = [t for t in dict.fromkeys(search_tokens(query))]
     rows = db.execute(
         select(SourceChunk, SourceFile)
@@ -171,33 +227,46 @@ def search(db: Session, project_id: uuid.UUID, query: str, k: int = 6) -> dict[s
                SourceFile.ingestion_status == "indexed")
     ).all()
     if not q or not rows:
-        return {"query": query, "terms": q, "hits": [], "verdict": "insufficient_evidence",
+        return {"query": query, "terms": q, "expansions": {}, "hits": [], "verdict": "insufficient_evidence",
                 "message": "غير متحقق — لا توجد أدلة كافية في مصادر المشروع."}
     docs = [(c, f, c.normalized.split()) for c, f in rows]
     n = len(docs)
     avgdl = sum(len(t) for _, _, t in docs) / n or 1
-    df = Counter()
+    df: Counter = Counter()
     for _, _, toks in docs:
         df.update(set(toks))
+    variants = expand_terms(q, set(df), _alias_expansions(db, project_id))
     k1, b = 1.4, 0.75
+
+    def bm25(term: str, tf: Counter, dl: int) -> float:
+        if not tf[term]:
+            return 0.0
+        idf = math.log(1 + (n - df[term] + 0.5) / (df[term] + 0.5))
+        return idf * tf[term] * (k1 + 1) / (tf[term] + k1 * (1 - b + b * dl / avgdl))
+
     scored = []
     for c, f, toks in docs:
         tf = Counter(toks)
-        s = 0.0
-        matched = 0
+        s, covered, strong, via = 0.0, 0, 0, []
         for t in q:
-            if tf[t]:
-                matched += 1
-                idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
-                s += idf * tf[t] * (k1 + 1) / (tf[t] + k1 * (1 - b + b * len(toks) / avgdl))
+            best = max(((w * bm25(v, tf, len(toks)), v, kind) for v, w, kind in variants[t]), key=lambda x: x[0])
+            if best[0] > 0:
+                s += best[0]
+                covered += 1
+                strong += best[2] in ("exact", "morph", "alias")
+                if best[2] != "exact":
+                    via.append({"term": t, "matched": best[1], "kind": best[2]})
         if s > 0:
-            scored.append((s, matched / len(q), c, f))
+            scored.append((s, covered / len(q), strong, via, c, f))
     scored.sort(key=lambda x: x[0], reverse=True)
-    hits = [_hit(s, cov, c, f) for s, cov, c, f in scored[:k]]
+    hits = [{**_hit(s, cov, c, f), "matched_via": via} for s, cov, _st, via, c, f in scored[:k]]
     need = min(MIN_MATCHED, len(q))
-    ok = bool(scored) and scored[0][1] >= MIN_COVERAGE and round(scored[0][1] * len(q)) >= need
+    ok = (bool(scored) and scored[0][1] >= MIN_COVERAGE and round(scored[0][1] * len(q)) >= need
+          and scored[0][2] >= 1)  # synonyms alone never count as evidence
     return {
-        "query": query, "terms": q, "hits": hits,
+        "query": query, "terms": q,
+        "expansions": {t: [{"variant": v, "kind": kind} for v, _w, kind in vs if kind != "exact"] for t, vs in variants.items()},
+        "hits": hits,
         "verdict": "evidence_found" if ok else "insufficient_evidence",
         "message": ("وُجدت مقاطع ذات صلة — راجعها قبل اعتماد أي ادعاء." if ok
                     else "غير متحقق — لا توجد أدلة كافية في مصادر المشروع."),

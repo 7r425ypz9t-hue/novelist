@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, download } from "../api/client";
 import { roleLabel, useProject } from "../App";
+import type { CalendarDef } from "../components/HijriPicker";
 import { Card, Empty, Field, Status, useToast } from "../components/ui";
 import { when } from "../lib/arabic";
 
@@ -71,6 +72,8 @@ export function SettingsPage() {
           </div>
         </Card>
 
+        <WorldCalendars pid={pid!} canEdit={!!proj.data?.permissions?.includes("bible")} />
+
         <Card title="الأعضاء والأدوار">
           <table className="table"><tbody>{members.data?.items.map((m: any) => (
             <tr key={m.user_id}><td>{m.display_name}<div className="dim mono">{m.email}</div></td><td><span className="badge">{roleLabel(m.role)}</span></td>
@@ -122,5 +125,47 @@ export function SettingsPage() {
         </Card>
       </div>
     </>
+  );
+}
+
+
+function WorldCalendars({ pid, canEdit }: { pid: string; canEdit: boolean }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const q = useQuery<{ custom: CalendarDef[] }>({ queryKey: ["calendars", pid], queryFn: () => api(`/v1/projects/${pid}/calendars`) });
+  const [draft, setDraft] = useState({ id: "", name: "", suffix: "", epoch: "0", ratio: "1", months: "" });
+  const save = async (list: CalendarDef[]) => {
+    try {
+      await api(`/v1/projects/${pid}/calendars`, { method: "PUT", body: { calendars: list } });
+      qc.invalidateQueries({ queryKey: ["calendars", pid] });
+      toast.ok("حُفظت تقاويم العالم الروائي");
+    } catch (e) { toast.error(e); }
+  };
+  const list = q.data?.custom || [];
+  const add = () => save([...list, { id: draft.id.trim(), name: draft.name.trim(), suffix: draft.suffix.trim(), epoch: Number(draft.epoch),
+    ratio: Number(draft.ratio) || 1, months: draft.months.split(/[,،]/).map((x) => x.trim()).filter(Boolean) }])
+    .then(() => setDraft({ id: "", name: "", suffix: "", epoch: "0", ratio: "1", months: "" }));
+  return (
+    <Card title="تقاويم العالم الروائي">
+      <div className="dim" style={{ marginBottom: 8 }}>لعوالم متخيلة بتقويمها الخاص. كل تقويم يُسقط على محور زمن القصة: «سنة 1» = نقطة البداية، و«النسبة» = طول السنة على المحور.</div>
+      {!list.length ? <Empty title="لا تقاويم مخصصة" /> : (
+        <table className="table"><tbody>{list.map((c) => (
+          <tr key={c.id}><td><strong>{c.name}</strong> <span className="mono dim">{c.id}</span><div className="dim">{c.months.join("، ")}</div></td>
+            <td className="mono">سنة 1 = {c.epoch} · ×{c.ratio}</td>
+            <td>{canEdit && <button className="btn sm ghost" onClick={() => save(list.filter((x) => x.id !== c.id))}>حذف</button>}</td></tr>))}
+        </tbody></table>
+      )}
+      {canEdit && (
+        <div className="form-grid" style={{ marginTop: 10 }}>
+          <Field label="المعرّف (لاتيني)"><input className="input" dir="ltr" value={draft.id} onChange={(e) => setDraft({ ...draft, id: e.target.value })} placeholder="flood" /></Field>
+          <Field label="الاسم"><input className="input" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="تقويم الطوفان" /></Field>
+          <Field label="لاحقة السنة"><input className="input" value={draft.suffix} onChange={(e) => setDraft({ ...draft, suffix: e.target.value })} placeholder="ط" /></Field>
+          <Field label="سنة 1 على المحور"><input className="input" dir="ltr" type="number" value={draft.epoch} onChange={(e) => setDraft({ ...draft, epoch: e.target.value })} /></Field>
+          <Field label="طول السنة (نسبة)"><input className="input" dir="ltr" type="number" step="any" min="0.01" value={draft.ratio} onChange={(e) => setDraft({ ...draft, ratio: e.target.value })} /></Field>
+          <Field label="الأشهر (افصل بفاصلة)"><input className="input" value={draft.months} onChange={(e) => setDraft({ ...draft, months: e.target.value })} placeholder="الندى، الريح، الملح" /></Field>
+          <div className="full"><button className="btn" disabled={!draft.id || !draft.name} onClick={add}>إضافة تقويم</button></div>
+        </div>
+      )}
+    </Card>
   );
 }

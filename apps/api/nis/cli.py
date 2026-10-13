@@ -25,7 +25,7 @@ def migrate() -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="nis", description="Novel Intelligence Studio operator CLI")
+    p = argparse.ArgumentParser(prog="nis", description="Kateb (كاتب) operator CLI")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("migrate", help="apply database migrations")
     sv = sub.add_parser("serve", help="run the API (and the built control panel)")

@@ -82,7 +82,7 @@ def export_archive(db: Session, project: Project) -> bytes:
     files["project.json"] = json.dumps(data, ensure_ascii=False, indent=1).encode("utf-8")
     files["manuscript.md"] = to_markdown(compile_book(db, project))
     files["README.txt"] = (
-        "أرشيف مشروع من استوديو ذكاء الرواية (NIS)\n"
+        "أرشيف مشروع من تطبيق «كاتب»\n"
         "project.json: كل بيانات المشروع (المخطوط، المراجعات كاملة، الكتاب المقدس للقصة، المصادر، الاستشهادات، "
         "التعارضات، المقترحات، التقييمات).\n"
         "sources/: الملفات الأصلية المرفوعة.\nmanuscript.md: النص المجمّع للقراءة.\n"
