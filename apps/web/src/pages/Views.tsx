@@ -26,7 +26,7 @@ export function TimelinePage() {
   const sy = (y: number) => padY + ((y - minY) / Math.max(1e-9, maxY - minY || 1)) * (H - padY * 2);
   return (
     <>
-      <div className="page-head"><div className="grow"><div className="eyebrow">TIMELINE</div><h1>الخط الزمني: زمن القصة مقابل ترتيب السرد</h1>
+      <div className="page-head"><div className="grow"><div className="eyebrow">محور الزمن</div><h1>الخط الزمني: زمن القصة مقابل ترتيب السرد</h1>
         <div className="muted">النقاط مشاهد بحسب موقعها في السرد (من اليمين) وزمنها في القصة (إلى الأسفل). القفزة إلى الأعلى استرجاع.</div></div></div>
       <div className="grid g3">
         <Card title="المخطط" className="span2" icon="timeline">
@@ -110,7 +110,7 @@ export function GraphPage() {
   const selEdges = sel ? edges.filter((e: any) => e.from === sel || e.to === sel) : [];
   return (
     <>
-      <div className="page-head"><div className="grow"><div className="eyebrow">KNOWLEDGE GRAPH</div><h1>شبكة العلاقات</h1>
+      <div className="page-head"><div className="grow"><div className="eyebrow">خريطة المعرفة</div><h1>شبكة العلاقات</h1>
         <div className="muted">الحواف من علاقات الكتاب المرجعي والأحداث المشتركة. انقر عقدة لرؤية روابطها وأدلتها.</div></div></div>
       <div className="grid g3">
         <Card title="الشبكة" className="span2" icon="graph">

@@ -22,3 +22,4 @@ Implementation decisions (2026-10-13, rationale in docs/SPEC_REVIEW.md §7):
 - D-15 Product renamed «كاتب» (Kateb) in every user-facing surface; internal identifiers (`nis` package, `NIS_*` env vars, `nis` CLI) unchanged for deployment compatibility.
 - D-14 Retrieval stays local: BM25 + morphological neighbours (bigram Dice ≥ 0.62) + curated synonyms + Story Bible aliases, each expansion reported; embeddings deferred by owner decision.
 - D-16 Owner palette adopted; light theme default. Per-project operator-blind keys declined by owner.
+- D-17 Arabic page eyebrows; fluid type scale (viewport clamp for page text, container queries for card titles/KPIs); top bar 64px; fluid sidebar and writing-room panes.

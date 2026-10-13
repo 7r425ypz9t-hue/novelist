@@ -24,7 +24,7 @@ export function AgentsPage() {
   return (
     <>
       <div className="page-head">
-        <div className="grow"><div className="eyebrow">AGENT OPERATIONS</div><h1>غرفة الوكلاء</h1>
+        <div className="grow"><div className="eyebrow">عمليات الوكلاء</div><h1>غرفة الوكلاء</h1>
           <div className="muted">ثلاثة عشر دوراً بعشرين مهارة وأكثر. كل وكيل يقرأ مشروعك فقط ويُصدر مقترحات؛ لا يملك أي وكيل حق القبول أو تعديل الكانون أو الحذف أو النشر.</div></div>
         {can && <button className="btn gold" onClick={() => setLaunch("A00")}><Icon name="play" size={16} /> تشغيل رئيس التحرير (فحص شامل)</button>}
       </div>

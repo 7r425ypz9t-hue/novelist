@@ -37,7 +37,7 @@ export function SettingsPage() {
   const activeConsent = consents.data?.items.find((c: any) => c.kind === "external_ai" && !c.revoked_at);
   return (
     <>
-      <div className="page-head"><div className="grow"><div className="eyebrow">SETTINGS · PRIVACY</div><h1>الإعدادات والخصوصية</h1></div>
+      <div className="page-head"><div className="grow"><div className="eyebrow">الضبط والحماية</div><h1>الإعدادات والخصوصية</h1></div>
         {owner && <button className="btn primary" onClick={() => save.mutate()} disabled={save.isPending}>حفظ</button>}</div>
       <div className="grid g2">
         <Card title="المشروع والمخطوط">

@@ -17,7 +17,7 @@ export function ProposalsPage() {
   return (
     <>
       <div className="page-head">
-        <div className="grow"><div className="eyebrow">CRITIQUE ROOM</div><h1>المقترحات والنقد</h1>
+        <div className="grow"><div className="eyebrow">غرفة النقد</div><h1>المقترحات والنقد</h1>
           <div className="muted">كل مقترح موسوم بأصله (الوكيل/المهارة) ونسخة الأساس ودرجة اليقين. القبول يُنشئ مراجعة جديدة؛ الرفض لا يغيّر شيئاً.</div></div>
       </div>
       <Tabs value={state} onChange={(s) => { setState(s); setSel(null); }} items={[["pending", "معلقة"], ["accepted", "مقبولة"], ["rejected", "مرفوضة"], ["stale", "متقادمة"], ["all", "الكل"]]} />

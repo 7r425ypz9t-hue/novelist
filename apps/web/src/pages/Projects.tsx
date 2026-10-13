@@ -24,7 +24,7 @@ export function ProjectsPage() {
     <>
       <div className="page-head">
         <div className="grow">
-          <div className="eyebrow">PROJECTS</div>
+          <div className="eyebrow">المكتبة الروائية</div>
           <h1>مشاريعك الروائية</h1>
         </div>
         <input ref={file} type="file" accept=".zip" hidden onChange={(e) => e.target.files?.[0] && restore.mutate(e.target.files[0])} />

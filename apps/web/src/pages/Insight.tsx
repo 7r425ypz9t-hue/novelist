@@ -21,7 +21,7 @@ export function InsightPage() {
   const n = nlqi.data;
   return (
     <>
-      <div className="page-head"><div className="grow"><div className="eyebrow">STYLE & QUALITY</div><h1>البصمة الأسلوبية والتقييم</h1>
+      <div className="page-head"><div className="grow"><div className="eyebrow">الأسلوب والجودة</div><h1>البصمة الأسلوبية والتقييم</h1>
         <div className="muted">البصمة تحمي صوتك أنت وتُبنى من عيّنات تملكها فقط. مؤشر NLQI تجميع لتقديرات بشرية بأوزانك — ليس حكماً آلياً.</div></div></div>
       <div className="grid g2">
         <Card title="البصمة الأسلوبية (LSIS)" icon="spark" actions={owner && <button className="btn sm primary" onClick={() => setNewStyle(true)}>بصمة جديدة</button>}>

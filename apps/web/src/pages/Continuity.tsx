@@ -34,7 +34,7 @@ export function ContinuityPage() {
   return (
     <>
       <div className="page-head">
-        <div className="grow"><div className="eyebrow">CONTINUITY WATCH · A07</div><h1>مراقبة الاستمرارية</h1>
+        <div className="grow"><div className="eyebrow">رقابة الاستمرارية · A07</div><h1>مراقبة الاستمرارية</h1>
           <div className="muted">كل تنبيه مدعوم بشاهدين على الأقل. الاختلاف المقصود (راوٍ غير موثوق، استرجاع) يُعفى بسبب مكتوب ولا يُعاد فتحه.</div></div>
         {can && <button className="btn gold" onClick={() => scan.mutate()} disabled={scan.isPending}><Icon name="scan" size={16} /> {scan.isPending ? "جارٍ الفحص…" : "فحص الآن"}</button>}
       </div>

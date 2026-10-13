@@ -28,7 +28,7 @@ export function PublishPage() {
   const d = checklist.data;
   return (
     <>
-      <div className="page-head"><div className="grow"><div className="eyebrow">PUBLISHING · A12</div><h1>التصدير والنشر</h1>
+      <div className="page-head"><div className="grow"><div className="eyebrow">النشر والإخراج · A12</div><h1>التصدير والنشر</h1>
         <div className="muted">لا يُرسل أي ملف إلى طرف خارجي؛ التصدير يُنزَّل إلى جهازك فقط، مع بصمة SHA-256 للتحقق.</div></div></div>
       {d && (
         <div className="grid g4" style={{ marginBottom: 16 }}>

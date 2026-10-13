@@ -15,7 +15,7 @@ export function BiblePage() {
   return (
     <>
       <div className="page-head">
-        <div className="grow"><div className="eyebrow">STORY BIBLE</div><h1>الكتاب المرجعي للرواية</h1>
+        <div className="grow"><div className="eyebrow">ذاكرة الرواية</div><h1>الكتاب المرجعي للرواية</h1>
           <div className="muted">الشخصيات والأماكن والأحداث والحقائق: الكانون المعتمد منفصل عن المسودة والفرضية والمصدر الخارجي.</div></div>
       </div>
       <Tabs value={tab} onChange={setTab} items={[["characters", "الشخصيات"], ["places", "الأماكن"], ["events", "الأحداث"], ["facts", "الحقائق والذاكرة"]]} />

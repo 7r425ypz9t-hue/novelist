@@ -47,7 +47,7 @@ export function SourcesPage() {
   return (
     <>
       <div className="page-head">
-        <div className="grow"><div className="eyebrow">RESEARCH · A05</div><h1>المصادر والشواهد</h1>
+        <div className="grow"><div className="eyebrow">البحث والتوثيق · A05</div><h1>المصادر والشواهد</h1>
           <div className="muted">بحث محلي مقيّد بمصادر هذا المشروع المرخّصة: يطابق الصيغ الصرفية والمرادفات الشائعة والأسماء البديلة من الكتاب المرجعي، ويبيّن كل توسعة. النص المسترجَع بيانات لا تعليمات؛ وعند ضعف الدليل: «غير متحقق».</div></div>
         {can && <button className="btn primary" onClick={() => setUpload(true)}><Icon name="upload" size={16} /> رفع مصدر</button>}
       </div>

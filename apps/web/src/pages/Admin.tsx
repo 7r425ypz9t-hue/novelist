@@ -21,7 +21,7 @@ export function AdminPage() {
   };
   return (
     <>
-      <div className="page-head"><div className="grow"><div className="eyebrow">SYSTEM OPERATIONS</div><h1>لوحة مسؤول النظام</h1>
+      <div className="page-head"><div className="grow"><div className="eyebrow">تشغيل النظام</div><h1>لوحة مسؤول النظام</h1>
         <div className="muted">تشغيل ومراقبة تقنية فقط: لا يرى المسؤول نصوص المخطوطات، وعناوين المشاريع الخاصة محجوبة، والسجلات منقّحة.</div></div></div>
       <div className="grid g4" style={{ marginBottom: 16 }}>
         <Kpi label="الخدمة" value={h ? <span className="row" style={{ justifyContent: "flex-end" }}><span className="dot ok" /> {h.status.toUpperCase()}</span> : "…"} sub={h && `v${h.version} · uptime ${Math.round(h.uptime_s / 60)} د`} tone="ok" />

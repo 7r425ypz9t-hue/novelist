@@ -19,7 +19,7 @@ export function DashboardPage() {
     <>
       <div className="page-head">
         <div className="grow">
-          <div className="eyebrow">MISSION CONTROL</div>
+          <div className="eyebrow">لوحة السيطرة</div>
           <h1>مركز القيادة</h1>
           <div className="muted">{d.project.logline || "حدّد الجملة المحورية من الإعدادات لتقيس الفصول عليها."}</div>
         </div>
