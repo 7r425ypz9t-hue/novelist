@@ -189,3 +189,9 @@ def test_reportlab_fallback_pdf_still_renders(book):
     finally:
         db.close()
     assert len(PdfReader(io.BytesIO(data)).pages) >= 4
+    # every font in the fallback PDF is the embedded Amiri — no unembedded base-14 Helvetica
+    names = set()
+    for pg in PdfReader(io.BytesIO(data)).pages:
+        for f in (pg.get("/Resources") or {}).get("/Font", {}).values():
+            names.add(str(f.get_object()["/BaseFont"]))
+    assert names and all("Amiri" in n for n in names), names

@@ -21,8 +21,12 @@
 - [x] Typography: Amiri (OFL) across UI and every export; manuscript 14px / line-height 1.5; «سكرتارية التحرير» dashboard with fixed motto.
 - [x] Arabic-aware find & replace (tashkeel/tatweel, hamza/taa/alef-maqsura/digit forms, whole word) in the unit and read-only across the manuscript with jump-to-hit; whole word accepts attached proclitics (و، ف، ب، ك، ل، ال). Manuscript-wide search on 255,000 words: 0.19 s (`NIS_PERF_FULL=1`).
 
+- [x] Operations: `nis doctor` readiness check (runs before every `nis serve`, refuses to start on a blocker such as a key that does not open stored content), `nis verify-data`, `create-admin --password-stdin`, `scripts/start.sh` (single user, key generated outside the data folder), `.dockerignore`, mirror-able base images.
+- [x] Docker verified in a real daemon: image built (apt step skipped, see open items), runs as uid 10001, compose with PostgreSQL 16 healthy, content encrypted in PostgreSQL, data survives restart, wrong key → container refuses to serve.
+- [x] Compose backups without host tools (`compose-backup.sh` with retention, `compose-verify.sh` restoring into a scratch database), daily systemd timer; tampered backup rejected.
+
 Open items (TODO, not done):
-- [ ] Docker image build not executed in this environment (no Docker daemon); compose file is untested.
+- [ ] Docker: the apt step (Pango/HarfBuzz for WeasyPrint) not executed here — deb.debian.org is blocked by this environment's egress policy; everything else built and ran (see below).
 - [ ] Firefox/Edge e2e configured in the CI matrix but not yet executed (only Chromium exists here); manual screen-reader review.
 - [ ] Embedding-based retrieval (deferred by the owner until infrastructure allows); continuity benchmark on third-party licensed chapters.
 - [ ] Human editorial calibration for AT19 and NLQI inter-rater agreement.

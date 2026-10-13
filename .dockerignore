@@ -1,0 +1,18 @@
+# Keep the build context small and free of local data: no manuscripts, databases, keys or host-built deps.
+.git
+.venv
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+var
+**/*.db
+**/*.db-*
+.env
+.env.*
+!.env.example
+apps/api/nis/static
+apps/web/dist
+apps/web/test-results
+apps/web/playwright-report
+backups

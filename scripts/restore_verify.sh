@@ -15,20 +15,6 @@ else
   export NIS_DATABASE_URL="$NIS_RESTORE_PG_URL"
 fi
 export NIS_DATA_DIR="$WORK/data"
-python3 - <<'PY'
-from sqlalchemy import select, func
-from nis.cli import migrate
-from nis.db import SessionLocal
-from nis.models import Revision, Project, SourceFile
-from nis.services.manuscript import canonical_hash
-from nis.storage import store
-migrate()
-db = SessionLocal()
-bad = [r.id for r in db.scalars(select(Revision)) if canonical_hash(r.content_json) != r.checksum]
-missing = [s.id for s in db.scalars(select(SourceFile)) if not (store().root / s.object_key).exists()]
-print("projects:", db.scalar(select(func.count()).select_from(Project)),
-      "revisions:", db.scalar(select(func.count()).select_from(Revision)),
-      "checksum mismatches:", len(bad), "missing source files:", len(missing))
-raise SystemExit(1 if bad or missing else 0)
-PY
+python3 -m nis.cli verify-data   # every revision checksum, every source object, every encrypted row
+date -u +%Y-%m-%dT%H:%M:%SZ > "$SRC/VERIFIED"
 echo "restore verified in $WORK"

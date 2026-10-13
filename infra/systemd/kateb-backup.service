@@ -1,0 +1,14 @@
+# Daily backup + restore verification for a docker compose deployment of «كاتب».
+# Install: copy both units to /etc/systemd/system, adjust WorkingDirectory/paths, then
+#   systemctl daemon-reload && systemctl enable --now kateb-backup.timer
+[Unit]
+Description=Kateb backup and restore verification
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/kateb
+Environment=KEEP_DAYS=30
+Environment="COMPOSE=docker compose -f infra/docker-compose.yml --env-file /opt/kateb/.env"
+ExecStart=/bin/sh -c 'scripts/compose-backup.sh /srv/kateb-backups && scripts/compose-verify.sh "$(ls -d /srv/kateb-backups/nis-* | tail -1)"'

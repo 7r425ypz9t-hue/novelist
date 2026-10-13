@@ -26,7 +26,8 @@ services:
       NIS_LLM_API_KEY: ${NIS_LLM_API_KEY:-}
       NIS_ALLOW_REGISTRATION: ${NIS_ALLOW_REGISTRATION:-true}
       NIS_MASTER_KEY: ${NIS_MASTER_KEY:-}
-    volumes: [nisdata:/data]
+      NIS_BACKUP_DIR: /backups   # read-only view of scripts/compose-backup.sh output, for `nis doctor`
+    volumes: ["nisdata:/data", "${NIS_BACKUP_HOST_DIR:-../backups}:/backups:ro"]
     ports: ["127.0.0.1:8000:8000"]
 volumes:
   pgdata: {}

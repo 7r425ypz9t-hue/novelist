@@ -422,7 +422,7 @@ def to_pdf_reportlab(book: Book) -> bytes:
     offset = 1 + toc_pages  # title page + toc pages
 
     buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=A5, pageCompression=1)
+    c = canvas.Canvas(buf, pagesize=A5, pageCompression=1, initialFontName=reg, initialFontSize=body)  # no unembedded Helvetica
     c.setTitle(book.title)
     c.setCreator("كاتب")
     c.setAuthor(book.author or "")

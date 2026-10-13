@@ -23,10 +23,11 @@
 ## البدء السريع
 
 ```bash
-scripts/dev.sh --demo
-# الواجهة: http://localhost:5173 — الدخول: demo@nis.local / demo-password-2026
+scripts/start.sh              # كاتب واحد على جهازه: http://127.0.0.1:8000 (يولّد مفتاح التشفير ويفحص الجاهزية)
+scripts/dev.sh --demo         # تطوير: الواجهة على http://localhost:5173 — الدخول التجريبي demo@nis.local / demo-password-2026
+python -m nis.cli doctor      # فحص الجاهزية في أي وقت
 ```
-النشر بـ Docker وPostgreSQL والنسخ الاحتياطي: [`docs/operations.md`](docs/operations.md).
+النشر بـ Docker وPostgreSQL، والنسخ الاحتياطي المجدول مع التحقق من الاسترجاع، واستكشاف الأعطال: [`docs/operations.md`](docs/operations.md).
 
 ## الاختبارات
 
@@ -42,7 +43,7 @@ cd apps/web && npm test && npm run typecheck && npx vite build && npx playwright
 apps/api/      FastAPI · SQLAlchemy · Alembic · nis/{routers,services,agents} · tests/
 apps/web/      React · TypeScript · Tiptap · Vite · e2e/ (Playwright)
 infra/         Dockerfile · docker-compose.yml (PostgreSQL 16)
-scripts/       dev.sh · backup.sh · restore_verify.sh
+scripts/       start.sh · dev.sh · backup.sh · restore_verify.sh · compose-backup.sh · compose-verify.sh
 docs/          SPEC_REVIEW · traceability · architecture · operations · spec/ (المواصفات الأصلية)
 ```
 

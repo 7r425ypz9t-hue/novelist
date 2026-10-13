@@ -16,3 +16,4 @@ apps/api/nis/static/
 !.env.example
 test-results/
 playwright-report/
+backups/

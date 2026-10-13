@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Kateb backup (03:17 server time, randomized up to 10 min)
+
+[Timer]
+OnCalendar=*-*-* 03:17:00
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

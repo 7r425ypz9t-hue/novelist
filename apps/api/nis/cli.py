@@ -1,4 +1,4 @@
-"""Operator CLI: `nis migrate | serve | create-admin | demo`."""
+"""Operator CLI: `nis migrate | serve | doctor | verify-data | create-admin | demo | new-key | encrypt-existing`."""
 
 import argparse
 import getpass
@@ -31,8 +31,13 @@ def main(argv: list[str] | None = None) -> int:
     sv = sub.add_parser("serve", help="run the API (and the built control panel)")
     sv.add_argument("--host", default="127.0.0.1")
     sv.add_argument("--port", type=int, default=8000)
+    sv.add_argument("--skip-doctor", action="store_true", help="start even if `nis doctor` reports a blocker")
+    dr = sub.add_parser("doctor", help="readiness check: database, migrations, storage, key, fonts, provider, backups")
+    dr.add_argument("--json", action="store_true")
+    sub.add_parser("verify-data", help="re-check every revision checksum, source object and encrypted row (exit 1 on loss)")
     ca = sub.add_parser("create-admin", help="create or promote an administrator")
     ca.add_argument("email")
+    ca.add_argument("--password-stdin", action="store_true", help="read the password from stdin (automation)")
     sub.add_parser("demo", help="load a small original Arabic demo project (no copyrighted text)")
     sub.add_parser("new-key", help="print a fresh NIS_MASTER_KEY (store it in the server environment)")
     sub.add_parser("encrypt-existing", help="encrypt plaintext content rows with NIS_MASTER_KEY (idempotent)")
@@ -45,6 +50,11 @@ def main(argv: list[str] | None = None) -> int:
         import uvicorn
 
         migrate()
+        from .ops import doctor, print_doctor
+
+        if print_doctor(doctor()) and not a.skip_doctor:
+            print("لن يبدأ الخادم قبل معالجة العوائق أعلاه (أو استعمل --skip-doctor).", file=sys.stderr)
+            return 1
         uvicorn.run("nis.main:app", host=a.host, port=a.port, proxy_headers=True)
     elif a.cmd == "create-admin":
         from sqlalchemy import select
@@ -57,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
         db = SessionLocal()
         u = db.scalar(select(User).where(User.email == a.email.lower()))
         if u is None:
-            pw = getpass.getpass("password (≥10 chars): ")
+            pw = sys.stdin.readline().rstrip("\n") if a.password_stdin else getpass.getpass("password (≥10 chars): ")
             if len(pw) < 10:
                 print("password too short", file=sys.stderr)
                 return 2
@@ -66,6 +76,18 @@ def main(argv: list[str] | None = None) -> int:
         u.is_admin = True
         db.commit()
         print(f"admin ready: {u.email}")
+    elif a.cmd == "doctor":
+        from .ops import doctor, print_doctor
+
+        return print_doctor(doctor(), as_json=a.json)
+    elif a.cmd == "verify-data":
+        import json
+
+        from .ops import verify_data
+
+        r = verify_data()
+        print(json.dumps(r, ensure_ascii=False))
+        return 0 if r["ok"] else 1
     elif a.cmd == "demo":
         from .demo import load_demo
 
