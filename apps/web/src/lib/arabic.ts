@@ -56,13 +56,30 @@ for (let d = 0; d < 10; d++) {
 }
 const esc = (c: string) => c.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&");
 
-export type SearchOpts = { ignoreMarks?: boolean; unifyLetters?: boolean; wholeWord?: boolean };
+export type SearchOpts = { ignoreMarks?: boolean; unifyLetters?: boolean; wholeWord?: boolean; clitics?: boolean };
 
-export function arabicPattern(query: string, { ignoreMarks = true, unifyLetters = true, wholeWord = false }: SearchOpts = {}): RegExp | null {
+// Proclitics allowed before a whole word (و، ف، ب، ك، ل، ال) — same list as nis.text.CLITIC_PREFIXES.
+export const CLITIC_PREFIXES = ["وبال", "فبال", "وكال", "فكال", "ولل", "فلل", "وال", "فال", "بال", "كال", "لل", "ال",
+  "وب", "فب", "وك", "فك", "ول", "فل", "و", "ف", "ب", "ك", "ل"];
+
+export function arabicPattern(query: string, { ignoreMarks = true, unifyLetters = true, wholeWord = false, clitics = true }: SearchOpts = {}): RegExp | null {
   const q = (ignoreMarks ? stripDiacritics(query) : query).trim();
   if (!q) return null;
   const parts = [...q].map((c) => (/\s/.test(c) ? "[^\\S\\n]+" : unifyLetters ? LOOSE[c] ?? esc(c) : esc(c)));
-  let body = parts.join(ignoreMarks ? MARKS : "") + (ignoreMarks ? MARKS : "");
-  if (wholeWord) body = `(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`;
+  let body = `(?<w>${parts.join(ignoreMarks ? MARKS : "") + (ignoreMarks ? MARKS : "")})`;
+  // the proclitic is consumed only at a word start and kept outside group «w» (what is highlighted/replaced)
+  if (wholeWord) body = `(?<![\\p{L}\\p{N}])${clitics ? `(?:${CLITIC_PREFIXES.join("|")})?` : ""}${body}(?![\\p{L}\\p{N}])`;
   return new RegExp(body, "giu");
+}
+
+/** Hits of an arabicPattern as [start, end) of group «w». */
+export function findSpans(re: RegExp, text: string): { start: number; end: number; text: string }[] {
+  const out: { start: number; end: number; text: string }[] = [];
+  for (const m of text.matchAll(re)) {
+    const w = m.groups?.w ?? m[0];
+    if (!w) continue;
+    const start = m.index! + m[0].length - w.length; // «w» is always the tail of the match
+    out.push({ start, end: start + w.length, text: w });
+  }
+  return out;
 }

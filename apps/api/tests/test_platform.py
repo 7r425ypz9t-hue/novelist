@@ -84,6 +84,11 @@ def test_AT15_long_manuscript_performance(writer):
     assert writer.post(f"/v1/projects/{p['id']}/continuity/scan").status_code == 200
     timings["continuity_scan"] = time.perf_counter() - t
     t = time.perf_counter()
+    r = writer.get(f"/v1/projects/{p['id']}/manuscript/search", params={"q": "السفن", "whole_word": True})
+    timings["manuscript_search"] = time.perf_counter() - t
+    assert r.status_code == 200 and r.json()["total"] >= chapters * 500
+    assert timings["manuscript_search"] < 2.0
+    t = time.perf_counter()
     assert writer.post(f"/v1/projects/{p['id']}/exports", json={"format": "docx"}).status_code == 201
     timings["export_docx"] = time.perf_counter() - t
     print("\nAT15 timings (s):", {k: round(v, 3) for k, v in timings.items()}, "words:", total)

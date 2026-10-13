@@ -83,7 +83,7 @@ def test_arabic_pattern_ignores_marks_and_unifies_letter_forms():
 
     text = "قالَ إنّ الحياةَ قصيرةٌ، ثمّ إنتهى في عام ١٩٥٨ والمدرسـة."
     def hits(q, **kw):
-        return [m.group() for m in arabic_pattern(q, **kw).finditer(text)]
+        return [m.group("w") for m in arabic_pattern(q, **kw).finditer(text)]
     assert hits("الحياة") == ["الحياةَ"]                   # trailing fatha stays inside the match
     assert hits("قصيره") == ["قصيرةٌ"]                     # ه/ة unified, tanween skipped
     assert hits("1958") == ["١٩٥٨"]                        # Western ↔ Eastern digits
@@ -93,3 +93,13 @@ def test_arabic_pattern_ignores_marks_and_unifies_letter_forms():
     assert hits("الحياةَ", ignore_marks=False) == ["الحياةَ"]
     assert arabic_pattern("   ") is None
     assert hits("(.*)+") == []                              # user input is literal, never a regex
+
+
+def test_whole_word_accepts_attached_proclitics_outside_the_match():
+    from nis.text import arabic_pattern
+
+    text = "قصيرةٌ وقصيرة بالقصيرة فالقصيرة مقصيرة"
+    pat = arabic_pattern("قصيرة", whole_word=True)
+    assert [m.group("w") for m in pat.finditer(text)] == ["قصيرةٌ", "قصيرة", "قصيرة", "قصيرة"]  # not «مقصيرة»
+    assert text[pat.search(text, 1).start("w") - 1] == "و"                                     # prefix not in hit
+    assert len(list(arabic_pattern("قصيرة", whole_word=True, clitics=False).finditer(text))) == 1

@@ -143,6 +143,10 @@ def test_manuscript_search_is_arabic_aware_ordered_and_member_only(writer, other
     assert [s["match"] for s in hit["snippets"]] == ["السفينةُ", "السفينه"]
     assert writer.get(f"/v1/projects/{p['id']}/manuscript/search", params={"q": "سفينة"}).json()["total"] == 3
     assert writer.get(f"/v1/projects/{p['id']}/manuscript/search",
-                      params={"q": "سفينة", "whole_word": True}).json()["total"] == 1
+                      params={"q": "سفينة", "whole_word": True}).json()["total"] == 3   # «ال» is a proclitic
+    assert writer.get(f"/v1/projects/{p['id']}/manuscript/search",
+                      params={"q": "سفينة", "whole_word": True, "clitics": False}).json()["total"] == 1
+    sn = hit["snippets"][0]
+    assert sn["before"] == "وصلت " and sn["cut_before"] is False and sn["after"].startswith(" إلى")
     assert other.get(f"/v1/projects/{p['id']}/manuscript/search", params={"q": "سفينة"}).status_code == 404
     assert writer.get(f"/v1/projects/{p['id']}/manuscript/search", params={"q": "x" * 201}).status_code == 422

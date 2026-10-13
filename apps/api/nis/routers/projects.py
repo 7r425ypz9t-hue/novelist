@@ -58,7 +58,7 @@ from ..services.manuscript import (
     revision_out,
     save_document,
 )
-from ..text import arabic_pattern, count_words, diff_texts, diff_stats, doc_from_plain
+from ..text import arabic_pattern, count_words, find_spans, diff_texts, diff_stats, doc_from_plain
 
 router = APIRouter(prefix="/v1", tags=["manuscript"])
 
@@ -244,12 +244,23 @@ def tree(acc: Access = Depends(project_access), db: Session = Depends(get_db)):
     return {"manuscripts": out}
 
 
+def _snippet(text: str, start: int, end: int, ctx: int = 40) -> dict:
+    """Context inside the hit's own paragraph; cut flags tell the client where to draw an ellipsis."""
+    para_start = text.rfind("\n", 0, start) + 1
+    para_end = text.find("\n", end)
+    para_end = len(text) if para_end < 0 else para_end
+    b0, a1 = max(para_start, start - ctx), min(para_end, end + ctx)
+    return {"before": text[b0:start], "match": text[start:end], "after": text[end:a1], "offset": start,
+            "cut_before": b0 > para_start, "cut_after": a1 < para_end}
+
+
 @router.get("/projects/{project_id}/manuscript/search")
 def manuscript_search(q: str = Query(min_length=1, max_length=200), ignore_marks: bool = True,
-                      unify_letters: bool = True, whole_word: bool = False,
+                      unify_letters: bool = True, whole_word: bool = False, clitics: bool = True,
                       acc: Access = Depends(project_access), db: Session = Depends(get_db)):
     """Read-only, Arabic-aware find across every live unit of the project, in reading order."""
-    pat = arabic_pattern(q, ignore_marks=ignore_marks, unify_letters=unify_letters, whole_word=whole_word)
+    pat = arabic_pattern(q, ignore_marks=ignore_marks, unify_letters=unify_letters, whole_word=whole_word,
+                         clitics=clitics)
     if pat is None:
         raise bad_request("عبارة البحث فارغة")
     docs = {d.node_id: d for d in db.scalars(select(Document).where(Document.project_id == acc.project.id))}
@@ -262,12 +273,11 @@ def manuscript_search(q: str = Query(min_length=1, max_length=200), ignore_marks
             if d is None or not d.text_plain:
                 continue
             text = d.text_plain
-            found = list(pat.finditer(text))
+            found = find_spans(pat, text)
             if not found:
                 continue
             total += len(found)
-            snips = [{"before": text[max(0, f.start() - 40):f.start()].split("\n")[-1], "match": f.group(),
-                      "after": text[f.end():f.end() + 40].split("\n")[0], "offset": f.start()} for f in found[:max_snips]]
+            snips = [_snippet(text, a, b) for a, b in found[:max_snips]]
             items.append({"node_id": str(n.id), "document_id": str(d.id), "type": n.type, "title": n.title,
                           "label": lb.get(n.id, ""), "count": len(found), "snippets": snips})
     return {"query": q, "total": total, "units": len(items), "items": items}

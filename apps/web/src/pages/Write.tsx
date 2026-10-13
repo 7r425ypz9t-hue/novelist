@@ -12,7 +12,7 @@ import { useProject } from "../App";
 import { Icon } from "../components/Icon";
 import { HijriPicker } from "../components/HijriPicker";
 import { DiffView, Empty, Field, Modal, Status, Tabs, useToast } from "../components/ui";
-import { ago, arabicPattern, countWords, docText, fmt, type SearchOpts } from "../lib/arabic";
+import { ago, arabicPattern, countWords, docText, findSpans, fmt, type SearchOpts } from "../lib/arabic";
 import { SAVE_LABEL, useAutosave } from "../lib/autosave";
 import { journalClear, journalGet } from "../lib/offline";
 
@@ -563,7 +563,7 @@ function CheckpointModal({ onClose, onSave }: { onClose: () => void; onSave: (la
 
 type Range = { from: number; to: number };
 type SearchHit = { node_id: string; document_id: string; label: string; title: string; count: number;
-  snippets: { before: string; match: string; after: string }[] };
+  snippets: { before: string; match: string; after: string; cut_before: boolean; cut_after: boolean }[] };
 
 /* Matches inside each paragraph across formatting boundaries (bold/footnote runs split text nodes). */
 function editorMatches(editor: any, re: RegExp): Range[] {
@@ -577,7 +577,7 @@ function editorMatches(editor: any, re: RegExp): Range[] {
       for (let i = 0; i < t.length; i++) at.push(pos + 1 + off + i);
       text += t;
     });
-    for (const m of text.matchAll(re)) if (m[0].length) out.push({ from: at[m.index!], to: at[m.index! + m[0].length - 1] + 1 });
+    for (const h of findSpans(re, text)) out.push({ from: at[h.start], to: at[h.end - 1] + 1 });
     return false;
   });
   return out;
@@ -591,7 +591,7 @@ function FindReplace({ editor, currentNodeId, onClose, onJump }: {
   const [scope, setScope] = useState<"unit" | "all">("unit");
   const [find, setFind] = useState("");
   const [repl, setRepl] = useState("");
-  const [opts, setOpts] = useState<Required<SearchOpts>>({ ignoreMarks: true, unifyLetters: true, wholeWord: false });
+  const [opts, setOpts] = useState<Required<SearchOpts>>({ ignoreMarks: true, unifyLetters: true, wholeWord: false, clitics: true });
   const [k, setK] = useState(0);
   const toast = useToast();
   const re = useMemo(() => arabicPattern(find, opts), [find, opts]);
@@ -602,7 +602,7 @@ function FindReplace({ editor, currentNodeId, onClose, onJump }: {
     enabled: !!submitted,
     queryFn: () => api(`/v1/projects/${pid}/manuscript/search?` + new URLSearchParams({
       q: submitted!.q, ignore_marks: String(submitted!.opts.ignoreMarks), unify_letters: String(submitted!.opts.unifyLetters),
-      whole_word: String(submitted!.opts.wholeWord) })),
+      whole_word: String(submitted!.opts.wholeWord), clitics: String(submitted!.opts.clitics) })),
   });
   const goto = (i: number) => {
     if (!matches.length) return;
@@ -622,8 +622,8 @@ function FindReplace({ editor, currentNodeId, onClose, onJump }: {
     editor.view.dispatch(tr);
     toast.ok(`استُبدل ${matches.length} موضعاً (يمكن التراجع)`);
   };
-  const opt = (key: keyof SearchOpts, label: string) => (
-    <label className="check"><input type="checkbox" checked={opts[key]} onChange={(e) => { setOpts({ ...opts, [key]: e.target.checked }); setK(0); }} /> {label}</label>
+  const opt = (key: keyof SearchOpts, label: string, disabled = false) => (
+    <label className="check"><input type="checkbox" checked={opts[key]} disabled={disabled} onChange={(e) => { setOpts({ ...opts, [key]: e.target.checked }); setK(0); }} /> {label}</label>
   );
   const searchAll = () => { if (find.trim()) setSubmitted({ q: find.trim(), opts: { ...opts } }); };
   return (
@@ -648,6 +648,7 @@ function FindReplace({ editor, currentNodeId, onClose, onJump }: {
           {opt("ignoreMarks", "تجاهل التشكيل والتطويل")}
           {opt("unifyLetters", "توحيد الهمزات والتاء المربوطة والألف المقصورة والأرقام")}
           {opt("wholeWord", "كلمة كاملة")}
+          {opt("clitics", "مع السوابق المتصلة (و، ف، ب، ك، ل، ال)", !opts.wholeWord)}
         </div>
       </div>
       {scope === "all" && (
@@ -660,7 +661,7 @@ function FindReplace({ editor, currentNodeId, onClose, onJump }: {
                 <span className="row">{h.node_id === currentNodeId && <span className="badge info">الوحدة الحالية</span>}<span className="badge">{h.count}</span></span></div>
               {h.snippets.map((sn, i) => (
                 <button key={i} className="find-hit" onClick={() => onJump(h, submitted!.q, submitted!.opts, i)}>
-                  …{sn.before}<mark>{sn.match}</mark>{sn.after}…
+                  {sn.cut_before && "…"}{sn.before}<mark>{sn.match}</mark>{sn.after}{sn.cut_after && "…"}
                 </button>
               ))}
               {h.count > h.snippets.length && <div className="dim">و{h.count - h.snippets.length} موضعاً آخر في هذه الوحدة</div>}

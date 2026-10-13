@@ -52,12 +52,19 @@ _LOOSE_CLASS.update({e: _LOOSE_CLASS[w] for w, e in zip("0123456789", "٠١٢٣�
 _LOOSE_CLASS.update({p: _LOOSE_CLASS[w] for w, p in zip("0123456789", "۰۱۲۳۴۵۶۷۸۹", strict=True)})
 
 
+# Proclitics that may precede a whole word (conjunction + preposition + article), longest first.
+CLITIC_PREFIXES = ("وبال", "فبال", "وكال", "فكال", "ولل", "فلل", "وال", "فال", "بال", "كال", "لل", "ال",
+                   "وب", "فب", "وك", "فك", "ول", "فل", "و", "ف", "ب", "ك", "ل")
+
+
 def arabic_pattern(query: str, *, ignore_marks: bool = True, unify_letters: bool = True,
-                   whole_word: bool = False) -> re.Pattern[str] | None:
+                   whole_word: bool = False, clitics: bool = True) -> re.Pattern[str] | None:
     """Literal search pattern for Arabic prose (mirrored in apps/web/src/lib/arabic.ts → arabicPattern).
 
     ignore_marks: the query's own tashkeel/tatweel are dropped and any marks in the text are skipped.
     unify_letters: أ/إ/آ/ٱ/ا, ي/ى/ئ, ه/ة, و/ؤ and Western/Eastern digits match each other.
+    clitics (with whole_word): a word may carry attached proclitics (و، ف، ب، ك، ل، ال) before it.
+    Use group «w» (or find_spans) for the hit itself.
     The query is always escaped (no user regex) and the pattern is linear, so it cannot backtrack badly.
     """
     q = strip_diacritics(query) if ignore_marks else query
@@ -73,9 +80,18 @@ def arabic_pattern(query: str, *, ignore_marks: bool = True, unify_letters: bool
     body = (_MARKS if ignore_marks else "").join(parts)
     if ignore_marks:
         body += _MARKS  # keep a trailing shadda/tanween inside the match
+    body = f"(?P<w>{body})"
     if whole_word:
-        body = r"(?<![^\W_])" + body + r"(?![^\W_])"
+        # «قصيرة» also finds «وقصيرة», «بالقصيرة»…; the proclitic is consumed only at a word start (cheap) and
+        # kept outside group «w», which is what callers highlight and replace.
+        pre = "(?:" + "|".join(CLITIC_PREFIXES) + ")?" if clitics else ""
+        body = r"(?<![^\W_])" + pre + body + r"(?![^\W_])"
     return re.compile(body, re.IGNORECASE)
+
+
+def find_spans(pattern: re.Pattern[str], text: str) -> list[tuple[int, int]]:
+    """(start, end) of group «w» for every match of an arabic_pattern."""
+    return [m.span("w") for m in pattern.finditer(text)]
 
 
 def words(s: str) -> list[str]:
