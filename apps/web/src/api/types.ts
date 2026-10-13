@@ -48,7 +48,7 @@ export interface DiffSeg { op: "equal" | "insert" | "delete"; text: string }
 export interface Run {
   id: string; agent_id: string; agent_name: string; skills: string[]; goal: string; status: string;
   risk_level: string; provider: string; model_id: string; tokens_used: number; steps: any[]; created_at: string;
-  finished_at: string | null; output?: any; error?: string; deduplicated?: boolean; attempts?: number;
+  finished_at: string | null; output?: any; error?: string; deduplicated?: boolean; attempts?: number; cost_estimate_usd?: number;
   started_at?: string | null; progress?: { done: number; failed: number; total: number; current: string | null };
 }
 

@@ -24,7 +24,7 @@ from ..models import AgentRun, Consent, Document, Project, utcnow
 from ..security import sha256_hex
 from . import skills as skills_mod
 from .context import ToolContext
-from .providers import Provider, ProviderUnavailable, estimate_cost, get_provider
+from .providers import Metered, Provider, ProviderUnavailable, estimate_cost, get_provider
 from .registry import AGENTS, PIPELINE, SKILLS
 
 log = logging.getLogger("nis.orchestrator")
@@ -155,7 +155,7 @@ def _execute(db: Session, run_id: uuid.UUID) -> None:
         run.started_at = run.started_at or utcnow()
         db.commit()
     s = get_settings()
-    provider: Provider = get_provider() if run.provider != "disabled" else Provider()
+    provider = Metered(get_provider() if run.provider != "disabled" else Provider())
     opts = {"allow_model": bool((run.output or {}).get("allow_model"))}
     results: dict[str, Any] = dict((run.output or {}).get("results") or {})
     for i, step in enumerate(list(run.steps)):
@@ -202,9 +202,14 @@ def _execute(db: Session, run_id: uuid.UUID) -> None:
         out["results"] = results
         run.output = out
         db.commit()
-    cost = estimate_cost(run.tokens_used, 0) if run.tokens_used else 0.0
-    run.cost_estimate_usd = cost or 0.0
     out = dict(run.output or {})
+    prior = out.get("usage") or {}
+    usage = {"input_tokens": int(prior.get("input_tokens", 0)) + provider.input_tokens,
+             "output_tokens": int(prior.get("output_tokens", 0)) + provider.output_tokens,
+             "calls": int(prior.get("calls", 0)) + provider.calls}
+    out["usage"] = usage
+    cost = estimate_cost(usage["input_tokens"], usage["output_tokens"]) if usage["calls"] else 0.0
+    run.cost_estimate_usd = cost or 0.0
     out["report"] = editorial_report(results)
     out["cost_note"] = "" if cost is not None else "التكلفة غير محسوبة: لم يحدد المشغل أسعار المزود."
     run.output = out

@@ -29,9 +29,11 @@
 
 - [x] «مسار الرواية» on the editorial secretariat page: eight stages (foundation → bible → writing → analysis → continuity → decisions → sources → publish) computed from live data, one recommended next step by editorial priority, role-aware actions (`GET /v1/projects/{id}/workflow`).
 
+- [x] Provider path: bounded retries with backoff and Retry-After, fast Arabic failures for 401/403/404/4xx, no built-in model name, configurable Anthropic base URL (gateways), per-run input/output token metering and exact cost when prices are set, `nis provider-check [--send-test-prompt]` (fixed prompt, never manuscript text).
+
 Open items (TODO, not done):
 - [ ] Docker: the apt step (Pango/HarfBuzz for WeasyPrint) not executed here — deb.debian.org is blocked by this environment's egress policy; everything else built and ran (see below).
 - [ ] Firefox/Edge e2e configured in the CI matrix but not yet executed (only Chromium exists here); manual screen-reader review.
 - [ ] Embedding-based retrieval (deferred by the owner until infrastructure allows); continuity benchmark on third-party licensed chapters.
 - [ ] Human editorial calibration for AT19 and NLQI inter-rater agreement.
-- [ ] Live call against a real model provider (adapter implemented, consent flow tested, no network call made).
+- [ ] Successful live model call: needs an operator key (none in this environment). Verified so far: the real network path to api.anthropic.com up to authentication (HTTP 401 with a deliberately invalid key, mapped to an Arabic message); full wire-format runs against a local Anthropic/OpenAI-compatible stand-in, including external-destination gating. Hugging Face and GitHub releases are blocked here, so no local model could be installed.

@@ -195,7 +195,10 @@ function RunModal({ runId, onClose }: { runId: string; onClose: () => void }) {
         <span style={{ flex: 1 }} />{proposals > 0 && <Link className="btn gold" to={`/p/${pid}/proposals`}>مراجعة {proposals} مقترحاً</Link>}</>}>
       <div className="row" style={{ marginBottom: 10 }}>
         <span className="badge">المخاطرة {r.risk_level}</span><span className="badge mono">{r.provider === "disabled" ? "deterministic" : r.model_id}</span>
-        <span className="badge mono">tokens {r.tokens_used}</span>{r.output?.cost_note && <span className="dim">{r.output.cost_note}</span>}
+        {r.output?.usage?.calls ? <span className="badge mono" title="رموز الإدخال / الإخراج · عدد الاستدعاءات">in {r.output.usage.input_tokens} · out {r.output.usage.output_tokens} · {r.output.usage.calls}×</span>
+          : <span className="badge mono">tokens {r.tokens_used}</span>}
+        {r.cost_estimate_usd ? <span className="badge mono">≈ ${r.cost_estimate_usd.toFixed(4)}</span> : null}
+        {r.output?.cost_note && <span className="dim">{r.output.cost_note}</span>}
       </div>
       {pr && pr.total > 0 && (
         <div className="run-progress" aria-live="polite">

@@ -112,6 +112,7 @@ def test_external_provider_is_consent_gated(novel, monkeypatch):
     w, p, ch = novel
     monkeypatch.setenv("NIS_LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("NIS_LLM_API_KEY", "test-key-not-used")
+    monkeypatch.setenv("NIS_LLM_MODEL", "operator-chosen-model")  # no built-in default model
     get_settings.cache_clear()
     try:
         r = w.run(p["id"], "A10", use_model=True)

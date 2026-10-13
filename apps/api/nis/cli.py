@@ -1,4 +1,4 @@
-"""Operator CLI: `nis migrate | serve | doctor | verify-data | create-admin | demo | new-key | encrypt-existing`."""
+"""Operator CLI: `nis migrate | serve | doctor | provider-check | verify-data | create-admin | demo | new-key | encrypt-existing`."""
 
 import argparse
 import getpass
@@ -34,6 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     sv.add_argument("--skip-doctor", action="store_true", help="start even if `nis doctor` reports a blocker")
     dr = sub.add_parser("doctor", help="readiness check: database, migrations, storage, key, fonts, provider, backups")
     dr.add_argument("--json", action="store_true")
+    pc = sub.add_parser("provider-check", help="show where model calls go; --send-test-prompt makes one fixed tiny call")
+    pc.add_argument("--send-test-prompt", action="store_true")
     sub.add_parser("verify-data", help="re-check every revision checksum, source object and encrypted row (exit 1 on loss)")
     ca = sub.add_parser("create-admin", help="create or promote an administrator")
     ca.add_argument("email")
@@ -80,6 +82,10 @@ def main(argv: list[str] | None = None) -> int:
         from .ops import doctor, print_doctor
 
         return print_doctor(doctor(), as_json=a.json)
+    elif a.cmd == "provider-check":
+        from .ops import provider_check
+
+        return provider_check(a.send_test_prompt)
     elif a.cmd == "verify-data":
         import json
 

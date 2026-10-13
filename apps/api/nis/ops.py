@@ -250,3 +250,40 @@ def verify_data() -> dict:
     return {"projects": projects, "documents": len(doc_ids), "revisions": len(rev_ids),
             "checksum_mismatches": bad, "unreadable_rows": unreadable, "missing_source_files": missing,
             "ok": bad == 0 and missing == 0 and unreadable == 0}
+
+
+TEST_SYSTEM = "أنت أداة فحص اتصال. أجب بكلمة واحدة فقط."
+TEST_PROMPT = "اكتب كلمة: جاهز"  # fixed text: a provider check never sends manuscript content
+
+
+def provider_check(send: bool) -> int:
+    """Show where model calls would go; with `send`, make ONE tiny call with a fixed prompt and report it."""
+    from .agents.providers import ProviderUnavailable, estimate_cost, get_provider
+
+    p = get_provider()
+    d = p.describe()
+    print(f" المزوّد: {d['name']} · النموذج: {d.get('model', '—')}")
+    print(f" الوجهة: {d['destination']}")
+    if d.get("retention_note"):
+        print(f" تنبيه: {d['retention_note']}")
+    if d["name"] == "disabled":
+        print(" ℹ معطّل عمداً — كل ما عدا المهارات التوليدية يعمل.")
+        return 0
+    if not p.available():
+        print(f" ✘ غير جاهز: {d.get('message')}")
+        return 1
+    if not send:
+        print(" ✔ الإعداد مكتمل. لإرسال جملة فحص ثابتة (لا تحوي شيئاً من المخطوط): nis provider-check --send-test-prompt")
+        return 0
+    t0 = time.perf_counter()
+    try:
+        c = p.complete(TEST_SYSTEM, TEST_PROMPT, 16)
+    except ProviderUnavailable as e:
+        print(f" ✘ فشل الاتصال: {e}")
+        return 1
+    ms = (time.perf_counter() - t0) * 1000
+    cost = estimate_cost(c.input_tokens, c.output_tokens)
+    print(f" ✔ ردّ خلال {ms:.0f} ms · النموذج الفعلي: {c.model} · رموز الإدخال/الإخراج: {c.input_tokens}/{c.output_tokens}")
+    print(f" الرد: {c.text.strip()[:60]!r}")
+    print(" التكلفة التقديرية: " + (f"{cost:.6f} USD" if cost is not None else "غير محسوبة — لم تُضبط أسعار NIS_LLM_PRICE_*"))
+    return 0
