@@ -23,3 +23,4 @@ Implementation decisions (2026-10-13, rationale in docs/SPEC_REVIEW.md §7):
 - D-14 Retrieval stays local: BM25 + morphological neighbours (bigram Dice ≥ 0.62) + curated synonyms + Story Bible aliases, each expansion reported; embeddings deferred by owner decision.
 - D-16 Owner palette adopted; light theme default. Per-project operator-blind keys declined by owner.
 - D-17 Arabic page eyebrows; fluid type scale (viewport clamp for page text, container queries for card titles/KPIs); top bar 64px; fluid sidebar and writing-room panes.
+- D-18 Tagline «استديو الرواية»; manuscript editor text fixed at 14px with line-height 1 (owner request; tokens `--fs-paper`, `--paper-leading`); exports keep their own print typography. Sidebar on light beige (`--sidebar-bg`, dark-theme counterpart), axe AA clean.

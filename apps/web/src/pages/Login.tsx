@@ -35,7 +35,7 @@ export function LoginPage() {
           <div style={{ textAlign: "center" }}>
             <span className="hero-ring" style={{ display: "inline-block" }}><BrandMark size={56} /></span>
             <h1 id="login-title">كاتب</h1>
-            <p className="muted">مساحة الروائي العربي: كتابة، ذاكرة، تحقق، ونقد — والقرار الأخير لك.</p>
+            <p className="muted">استديو الرواية: كتابة، ذاكرة، تحقق، ونقد — والقرار الأخير لك.</p>
           </div>
           {mode === "register" && (
             <Field label="الاسم الظاهر"><input className="input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></Field>

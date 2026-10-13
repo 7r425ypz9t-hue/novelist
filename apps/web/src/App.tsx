@@ -123,7 +123,7 @@ function Shell({ children, project, flush }: { children: ReactNode; project?: bo
       <header className="topbar">
         <div className="brand">
           <BrandMark />
-          <div>كاتب<small>مساحة الروائي العربي</small></div>
+          <div>كاتب<small>استديو الرواية</small></div>
         </div>
         {project && proj.data && (
           <div className="row" style={{ gap: 6 }}>
