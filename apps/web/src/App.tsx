@@ -152,7 +152,7 @@ function Shell({ children, project, flush }: { children: ReactNode; project?: bo
         {project && pid && (
           <>
             <div className="nav-section">المشروع</div>
-            {link(`/p/${pid}`, "dashboard", "مركز القيادة")}
+            {link(`/p/${pid}`, "dashboard", "سكرتارية التحرير")}
             {link(`/p/${pid}/write`, "write", "غرفة الكتابة")}
             <div className="nav-section">عالم الرواية</div>
             {link(`/p/${pid}/bible`, "bible", "الكتاب المرجعي")}

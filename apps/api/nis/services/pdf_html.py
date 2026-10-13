@@ -62,16 +62,16 @@ def book_html(book: Book) -> str:
             pending_blocks.append(it)
     flush_chapter()
 
-    font = (FONT_DIR / "NotoNaskhArabic-Regular.ttf").as_uri()
-    font_b = (FONT_DIR / "NotoNaskhArabic-Bold.ttf").as_uri()
+    font = (FONT_DIR / "Amiri-Regular.ttf").as_uri()
+    font_b = (FONT_DIR / "Amiri-Bold.ttf").as_uri()
     css = f"""
-    @font-face {{ font-family: "Noto Naskh Arabic"; src: url("{font}"); }}
-    @font-face {{ font-family: "Noto Naskh Arabic"; font-weight: bold; src: url("{font_b}"); }}
+    @font-face {{ font-family: "Amiri"; src: url("{font}"); }}
+    @font-face {{ font-family: "Amiri"; font-weight: bold; src: url("{font_b}"); }}
     @page {{ size: A5; margin: 20mm 18mm 22mm;
-             @bottom-center {{ content: counter(page, arabic-indic); font: 9pt "Noto Naskh Arabic"; }} }}
+             @bottom-center {{ content: counter(page, arabic-indic); font: 9pt "Amiri"; }} }}
     @page :first {{ @bottom-center {{ content: none; }} }}
     @page toc {{ @bottom-center {{ content: none; }} }}
-    html {{ direction: {'rtl' if rtl else 'ltr'}; font-family: "Noto Naskh Arabic", serif; font-size: 11.5pt; line-height: 1.95; }}
+    html {{ direction: {'rtl' if rtl else 'ltr'}; font-family: "Amiri", serif; font-size: 11.5pt; line-height: 1.95; }}
     .title {{ page: first; text-align: center; padding-top: 55mm; page-break-after: always; }}
     .title h1 {{ font-size: 24pt; margin: 0; }} .title p {{ margin: 6mm 0 0; }}
     nav {{ page: toc; page-break-after: always; }} nav h1 {{ text-align: center; font-size: 16pt; }}

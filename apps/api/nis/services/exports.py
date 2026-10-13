@@ -21,7 +21,7 @@ from ..models import Document, Manuscript, Project
 from .manuscript import ordered_nodes
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
-FONT_NAME = "Noto Naskh Arabic"
+FONT_NAME = "Amiri"
 SCENE_BREAK = "⁂"
 AR_DIGITS = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
 
@@ -301,10 +301,10 @@ def _pdf_fonts() -> tuple[str, str]:
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
 
-    if "Kateb-Naskh" not in pdfmetrics.getRegisteredFontNames():
-        pdfmetrics.registerFont(TTFont("Kateb-Naskh", str(FONT_DIR / "NotoNaskhArabic-Regular.ttf")))
-        pdfmetrics.registerFont(TTFont("Kateb-Naskh-Bold", str(FONT_DIR / "NotoNaskhArabic-Bold.ttf")))
-    return "Kateb-Naskh", "Kateb-Naskh-Bold"
+    if "Kateb-Amiri" not in pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(TTFont("Kateb-Amiri", str(FONT_DIR / "Amiri-Regular.ttf")))
+        pdfmetrics.registerFont(TTFont("Kateb-Amiri-Bold", str(FONT_DIR / "Amiri-Bold.ttf")))
+    return "Kateb-Amiri", "Kateb-Amiri-Bold"
 
 
 def _shape(text: str) -> str:
@@ -387,7 +387,7 @@ def to_pdf_reportlab(book: Book) -> bytes:
         elif it.kind == "scene_break":
             need(lead * 2)
             y -= lead * 0.4
-            pages[-1].append(("center", "*   *   *", reg, body, y))  # ⁂ is not in the embedded font
+            pages[-1].append(("center", SCENE_BREAK, reg, body * 1.3, y))  # Amiri carries ⁂
             y -= lead * 1.2
         elif it.kind == "notes":
             need(lead * 2)
@@ -566,9 +566,9 @@ def to_epub(book: Book, book_id: str | None = None) -> bytes:
         )
 
     css = (
-        '@font-face{font-family:"Noto Naskh Arabic";src:url(fonts/NotoNaskhArabic-Regular.ttf);}\n'
-        '@font-face{font-family:"Noto Naskh Arabic";font-weight:bold;src:url(fonts/NotoNaskhArabic-Bold.ttf);}\n'
-        f'body{{font-family:"Noto Naskh Arabic",serif;direction:{dir_};text-align:justify;line-height:1.9;}}\n'
+        '@font-face{font-family:"Amiri";src:url(fonts/Amiri-Regular.ttf);}\n'
+        '@font-face{font-family:"Amiri";font-weight:bold;src:url(fonts/Amiri-Bold.ttf);}\n'
+        f'body{{font-family:"Amiri",serif;direction:{dir_};text-align:justify;line-height:1.9;}}\n'
         "h1,h2{text-align:center;margin:2em 0 1em;}p{text-indent:1.2em;margin:0 0 .4em;}"
         "p.break{text-align:center;text-indent:0;margin:1em 0;}blockquote{margin:1em 2em;}"
         ".notes{font-size:.85em;border-top:1px solid #999;margin-top:2em;}"
@@ -597,8 +597,8 @@ def to_epub(book: Book, book_id: str | None = None) -> bytes:
         '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
         '<item id="title" href="title.xhtml" media-type="application/xhtml+xml"/>'
         '<item id="css" href="style.css" media-type="text/css"/>'
-        '<item id="f1" href="fonts/NotoNaskhArabic-Regular.ttf" media-type="font/ttf"/>'
-        '<item id="f2" href="fonts/NotoNaskhArabic-Bold.ttf" media-type="font/ttf"/>'
+        '<item id="f1" href="fonts/Amiri-Regular.ttf" media-type="font/ttf"/>'
+        '<item id="f2" href="fonts/Amiri-Bold.ttf" media-type="font/ttf"/>'
         f"{manifest}</manifest>"
         f'<spine toc="ncx" page-progression-direction="{dir_}"><itemref idref="title"/><itemref idref="nav"/>{spine}</spine>'
         "</package>"
@@ -626,7 +626,7 @@ def to_epub(book: Book, book_id: str | None = None) -> bytes:
         z.writestr("OEBPS/toc.ncx", ncx, compress_type=zipfile.ZIP_DEFLATED)
         z.writestr("OEBPS/title.xhtml", title_page, compress_type=zipfile.ZIP_DEFLATED)
         z.writestr("OEBPS/style.css", css, compress_type=zipfile.ZIP_DEFLATED)
-        for f in ("NotoNaskhArabic-Regular.ttf", "NotoNaskhArabic-Bold.ttf"):
+        for f in ("Amiri-Regular.ttf", "Amiri-Bold.ttf"):
             z.write(FONT_DIR / f, f"OEBPS/fonts/{f}", compress_type=zipfile.ZIP_DEFLATED)
         for f, t, b in files:
             z.writestr(f"OEBPS/{f}", page(t, "".join(b)), compress_type=zipfile.ZIP_DEFLATED)

@@ -50,7 +50,7 @@ def test_AT16_docx_is_rtl_with_toc_and_chapters(book):
     assert "البحر" in texts and "العودة" in texts and "الجزء الأول" in texts and "المحتويات" in texts
     xml = d.element.xml
     assert "<w:bidi/>" in xml and "<w:rtl/>" in xml and 'TOC \\o "1-2"' in xml
-    assert "Noto Naskh Arabic" in xml
+    assert "Amiri" in xml
     assert "حاشية تجريبية" in "\n".join(texts)
     assert texts.count("⁂") == 1  # one scene break between the two scenes of chapter 1
 
@@ -84,7 +84,7 @@ def test_AT16_pdf_opens_with_outline_and_arabic_font(book):
     titles = [o.title if hasattr(o, "title") else None for o in _flatten(r.outline)]
     assert "البحر" in titles and "العودة" in titles
     fonts = [f.get_object()["/BaseFont"] for f in r.pages[2]["/Resources"]["/Font"].values()]
-    assert any("NotoNaskhArabic" in str(f).replace("-", "").replace(" ", "").replace("#20", "") for f in fonts), fonts  # OFL font
+    assert any("Amiri" in str(f).replace("-", "").replace(" ", "").replace("#20", "") for f in fonts), fonts  # OFL font
 
 
 def _flatten(items):

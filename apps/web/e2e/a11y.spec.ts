@@ -19,7 +19,7 @@ test("NFR07 — no serious or critical axe violations (dark & light)", async ({ 
   await page.getByRole("button", { name: "مشروع جديد" }).click();
   await page.getByLabel("عنوان الرواية").fill("فحص الوصول");
   await page.getByRole("button", { name: "إنشاء", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "مركز القيادة" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "سكرتارية التحرير" })).toBeVisible();
   const base = page.url();
   for (const theme of ["dark", "light"]) {
     await page.evaluate((t) => { document.documentElement.dataset.theme = t; localStorage.setItem("nis.theme", t); }, theme);

@@ -18,7 +18,8 @@ async function newNovelWithScene(page: Page, title: string) {
   await page.getByRole("button", { name: "مشروع جديد" }).click();
   await page.getByLabel("عنوان الرواية").fill(title);
   await page.getByRole("button", { name: "إنشاء", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "مركز القيادة" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "سكرتارية التحرير" })).toBeVisible();
+  await expect(page.getByText("كلما اتسعت الرؤية ضاقت العبارة")).toBeVisible();
   await page.getByRole("link", { name: "غرفة الكتابة" }).click();
   await page.getByRole("button", { name: "+ فصل" }).click();
   await page.getByRole("button", { name: "+ مشهد" }).click();
@@ -44,8 +45,9 @@ test("AT01/AT02 — create, write mixed RTL/LTR text, autosave, persists after r
   const dir = await editor.locator("p").first().evaluate((el) => getComputedStyle(el).direction);
   expect(dir).toBe("rtl");
   // owner typography (D-18): manuscript text 14px, line spacing 1.5; tagline «استديو الرواية»
-  const type = await editor.evaluate((el) => { const c = getComputedStyle(el); return [c.fontSize, c.lineHeight]; });
-  expect(type).toEqual(["14px", "21px"]);
+  const type = await editor.evaluate((el) => { const c = getComputedStyle(el); return [c.fontSize, c.lineHeight, c.fontFamily.split(",")[0].replace(/"/g, "")]; });
+  expect(type).toEqual(["14px", "21px", "Amiri"]); // D-20: Amiri (OFL) is the manuscript face
+  expect(await page.evaluate(() => document.fonts.check('14px "Amiri"', "كاتب"))).toBe(true);
   await expect(page.locator(".brand")).toContainText("استديو الرواية");
   const url = page.url();
   // new session

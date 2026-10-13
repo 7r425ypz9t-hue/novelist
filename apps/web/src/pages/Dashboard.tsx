@@ -19,9 +19,9 @@ export function DashboardPage() {
     <>
       <div className="page-head">
         <div className="grow">
-          <div className="eyebrow">لوحة السيطرة</div>
-          <h1>مركز القيادة</h1>
-          <div className="muted">{d.project.logline || "حدّد الجملة المحورية من الإعدادات لتقيس الفصول عليها."}</div>
+          <div className="eyebrow">لوحة الإدارة</div>
+          <h1>سكرتارية التحرير</h1>
+          <p className="motto">كلما اتسعت الرؤية ضاقت العبارة</p>
         </div>
         <Link className="btn primary" to={`/p/${pid}/write`}><Icon name="write" size={16} /> متابعة الكتابة</Link>
         <Link className="btn gold" to={`/p/${pid}/agents`}><Icon name="agents" size={16} /> تشغيل فحص شامل</Link>

@@ -7,7 +7,7 @@ import { Card, Empty, Status, useToast } from "../components/ui";
 import { fmt, when } from "../lib/arabic";
 
 const FORMATS: { id: "docx" | "pdf" | "epub" | "md"; title: string; desc: string }[] = [
-  { id: "docx", title: "Word ‏DOCX", desc: "فقرات ثنائية الاتجاه، خط Noto Naskh Arabic، فهرس تلقائي، فاصل صفحات لكل فصل، حواشٍ." },
+  { id: "docx", title: "Word ‏DOCX", desc: "فقرات ثنائية الاتجاه، خط Amiri، فهرس تلقائي، فاصل صفحات لكل فصل، حواشٍ." },
   { id: "pdf", title: "PDF ‏A5", desc: "تشكيل الحروف وإعادة الترتيب، ضبط الأسطر، فهرس بأرقام الصفحات، علامات تنقل، أرقام عربية." },
   { id: "epub", title: "EPUB 3", desc: "تقدّم صفحات من اليمين، لغة ar، فهرس nav وtoc.ncx، خط مضمّن، حواشٍ قابلة للنقر." },
   { id: "md", title: "Markdown", desc: "نص مجمّع خفيف لأدوات أخرى ولمراجعة الفروق." },

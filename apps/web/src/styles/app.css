@@ -2,33 +2,14 @@
    Palette (owner-approved): #FFFFFF · #84DCC6 teal · #A5FFD6 mint · #FFA69E salmon · #FF686B coral.
    Palette colours are used as fills, surfaces and accents; text on them uses darker shades of the same hues so every
    pairing stays ≥ 4.5:1 (WCAG 2.2 AA, checked by e2e/a11y.spec.ts). Light is the default; dark is a variant. */
-/* Owner's preferred face «أضواء السلف» (adwa-assalaf). It is a derivative of a commercial
-   Linotype design, so it is NOT bundled or served: the browser uses it only when it is
-   installed on the author's own device (local()), Arabic code points only. Otherwise the
-   bundled OFL faces below apply. Exports always embed the OFL Noto Naskh Arabic. */
-@font-face { font-family: "Kateb Local"; font-weight: 100 599; font-display: swap;
-  src: local("adwa-assalaf"), local("adwa-assalaf Regular"), local("adwa-assalaf-Regular");
-  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
-@font-face { font-family: "Kateb Local"; font-weight: 600 900; font-display: swap;
-  src: local("adwa-assalaf Bold"), local("adwa-assalaf-Bold");
-  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
-
-/* Same face for chrome/UI, scaled to match the x-height of the bundled UI font; manuscript keeps true size. */
-@font-face { font-family: "Kateb Local UI"; font-weight: 100 599; font-display: swap; size-adjust: 112%;
-  src: local("adwa-assalaf"), local("adwa-assalaf Regular"), local("adwa-assalaf-Regular");
-  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
-@font-face { font-family: "Kateb Local UI"; font-weight: 600 900; font-display: swap; size-adjust: 112%;
-  src: local("adwa-assalaf Bold"), local("adwa-assalaf-Bold");
-  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
-
 :root {
   --p-white: #FFFFFF;
   --p-teal: #84DCC6;
   --p-mint: #A5FFD6;
   --p-salmon: #FFA69E;
   --p-coral: #FF686B;
-  --font-ui: "Kateb Local UI", "IBM Plex Sans Arabic", system-ui, sans-serif;
-  --font-text: "Kateb Local", "Noto Naskh Arabic", "IBM Plex Sans Arabic", serif;
+  --font-ui: "Kateb UI", "Amiri", "IBM Plex Sans Arabic", system-ui, serif;
+  --font-text: "Amiri", "IBM Plex Sans Arabic", serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --radius: 10px;
   --radius-sm: 6px;
@@ -301,6 +282,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
   max-width: 760px; margin: 0 auto; background: var(--paper); color: var(--paper-text); border-radius: 4px;
   border: 1px solid var(--line); padding: 48px 64px 72px; min-height: 70vh; box-shadow: var(--shadow);
 }
+.motto { font-family: var(--font-text); font-size: var(--fs-h3); color: var(--text-2); margin: 2px 0 0; }
 .paper .ProseMirror { font-family: var(--font-text); font-size: var(--fs-paper); line-height: var(--paper-leading); outline: none; min-height: 50vh; text-align: justify; }
 .paper .ProseMirror p { margin: 0 0 .5em; }
 .paper .ProseMirror h1, .paper .ProseMirror h2, .paper .ProseMirror h3 { font-family: var(--font-text); color: var(--gold); margin: 1em 0 .5em; text-align: center; }
