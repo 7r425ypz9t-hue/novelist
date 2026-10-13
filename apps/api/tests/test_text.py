@@ -53,12 +53,12 @@ def test_apply_rejects_changed_base_text():
 
 def test_marks_survive_partial_replace():
     doc = {"type": "doc", "content": [{"type": "paragraph", "content": [
-        {"type": "text", "text": "قال "}, {"type": "text", "text": "سالم", "marks": [{"type": "bold"}]},
+        {"type": "text", "text": "قال "}, {"type": "text", "text": "نادر", "marks": [{"type": "bold"}]},
         {"type": "text", "text": " ذلك"}]}]}
-    new = apply_ops(doc, [{"op": "replace_text", "block": 0, "start": 4, "end": 8, "expected": "سالم", "text": "سليم"}])
+    new = apply_ops(doc, [{"op": "replace_text", "block": 0, "start": 4, "end": 8, "expected": "نادر", "text": "مازن"}])
     inline = new["content"][0]["content"]
-    assert doc_to_plain(new) == "قال سليم ذلك"
-    assert any(n.get("marks") == [{"type": "bold"}] and n["text"] == "سليم" for n in inline)
+    assert doc_to_plain(new) == "قال مازن ذلك"
+    assert any(n.get("marks") == [{"type": "bold"}] and n["text"] == "مازن" for n in inline)
 
 
 def test_diff_is_word_level_and_paragraph_aligned():

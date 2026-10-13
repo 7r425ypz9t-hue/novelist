@@ -33,7 +33,7 @@ test("AT01/AT02 — create, write mixed RTL/LTR text, autosave, persists after r
   await newNovelWithScene(page, "رواية الشاطئ");
   const editor = page.locator(".ProseMirror");
   await editor.click();
-  await page.keyboard.type("قال سالم: «سأصل في 10:30 مع John إلى Port-Said» ثم مضى، أليس كذلك؟");
+  await page.keyboard.type("قال نادر: «سأصل في 10:30 مع John إلى Port-Said» ثم مضى، أليس كذلك؟");
   await expect(saveState(page)).toHaveText(/محفوظ على الخادم/, { timeout: 15_000 });
   await expect(page.getByTestId("live-words")).toHaveText(/15 كلمة/) // 10:30 and Port-Said are two tokens each, same rule as the server;
   // Arabic paragraph is rendered right-to-left even though it contains Latin runs and digits

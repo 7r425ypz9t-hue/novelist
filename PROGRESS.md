@@ -8,12 +8,13 @@
 - [x] Phase 4 — A00–A12 + 21 skills, cancellable idempotent runs, proposals with diff and accept/reject/modify, editorial report.
 - [x] Phase 5 (partial) — style fingerprint with consent, NLQI human rubric, lexical affect/reading simulation (labelled hypothetical).
 - [x] Phase 6 (partial) — PDF/EPUB, data export/restore, backup + verified restore scripts, admin console, 255k-word performance smoke.
-- [x] Tests executed: 60 backend (SQLite and PostgreSQL 16), 6 frontend unit, 3 Playwright e2e (Chromium).
+- [x] Tests executed: 60 backend (SQLite and PostgreSQL 16) + 2 opt-in load tests, 6 frontend unit, 4 Playwright e2e incl. axe WCAG audit (Chromium).
+- [x] NFR04 load (1,000 scenes / 300 characters) — single-pass name matcher cut the continuity scan from 11.1 s to 2.8 s.
+- [x] Demo and test fixtures use neutral original names only.
 
 Open items (TODO, not done):
 - [ ] Docker image build not executed in this environment (no Docker daemon); compose file is untested.
-- [ ] Cross-browser RTL e2e (Firefox, Edge); automated accessibility audit (axe).
-- [ ] NFR04 load with 1,000 scenes / 300 characters.
+- [ ] Cross-browser RTL e2e (Firefox, Edge); manual screen-reader review (automated axe audit passes).
 - [ ] Envelope encryption for private projects; Hijri/fictional calendars; HarfBuzz-based PDF with full tashkeel.
 - [ ] Embedding-based hybrid retrieval after a recall benchmark; golden continuity dataset (precision/recall).
 - [ ] Human editorial calibration for AT19 and NLQI inter-rater agreement.

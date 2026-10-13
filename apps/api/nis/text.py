@@ -79,11 +79,13 @@ def sentences(s: str) -> list[str]:
     return [x.strip() for x in SENTENCE_END.split(s) if x and x.strip()]
 
 
+_LETTER = re.compile(r"[^\W\d_]", re.UNICODE)
+_AR_LETTER = re.compile(r"[\u0620-\u064A\u066E-\u06D3\u06FA-\u06FF]")
+
+
 def is_arabic(s: str) -> bool:
-    letters = [c for c in s if c.isalpha()]
-    if not letters:
-        return False
-    return sum(1 for c in letters if ARABIC_CHAR.match(c)) / len(letters) > 0.5
+    letters = len(_LETTER.findall(s))
+    return bool(letters) and len(_AR_LETTER.findall(s)) / letters > 0.5
 
 
 # ───────────────────────────── Tiptap JSON ─────────────────────────────

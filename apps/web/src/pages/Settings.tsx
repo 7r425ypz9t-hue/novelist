@@ -78,8 +78,8 @@ export function SettingsPage() {
           </tbody></table>
           {owner && (
             <div className="row" style={{ marginTop: 10 }}>
-              <input className="input" style={{ flex: 1 }} dir="ltr" placeholder="email@example.com" value={invite.email} onChange={(e) => setInvite({ ...invite, email: e.target.value })} />
-              <select className="select" style={{ width: 150 }} value={invite.role} onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
+              <input className="input" style={{ flex: 1 }} dir="ltr" aria-label="بريد العضو" placeholder="email@example.com" value={invite.email} onChange={(e) => setInvite({ ...invite, email: e.target.value })} />
+              <select className="select" style={{ width: 150 }} aria-label="الدور" value={invite.role} onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
                 <option value="editor">محرر مشارك</option><option value="commenter">معلّق</option><option value="reader">قارئ تجريبي</option></select>
               <button className="btn" onClick={() => run(api(`/v1/projects/${pid}/members`, { body: invite }), "أُضيف العضو")}>إضافة</button>
             </div>

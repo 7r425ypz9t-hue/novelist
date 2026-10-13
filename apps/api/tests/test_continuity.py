@@ -11,17 +11,17 @@ def test_parse_age_words_and_digits():
 
 def _novel(w):
     p = w.project("ذاكرة الميناء")
-    salem = w.post(f"/v1/projects/{p['id']}/characters",
-                   json={"canonical_name": "سالم", "profile": {"birth_year": 1945}}).json()
+    hero = w.post(f"/v1/projects/{p['id']}/characters",
+                   json={"canonical_name": "نادر", "profile": {"birth_year": 1945}}).json()
     ch1 = w.node(p["id"], "chapter", "الطفولة", meta={"story_time": 1957})
-    w.write(ch1["document_id"], "كان سالم في الثانية عشرة من عمره حين غرق القارب.")
+    w.write(ch1["document_id"], "كان نادر في الثانية عشرة من عمره حين غرق القارب.")
     ch3 = w.node(p["id"], "chapter", "العودة", meta={"story_time": 1972})
-    return p, salem, ch1, ch3
+    return p, hero, ch1, ch3
 
 
 def test_scenario_B_age_change_in_chapter_is_reported_with_both_spans(writer):
-    p, salem, ch1, ch3 = _novel(writer)
-    writer.write(ch3["document_id"], "عاد سالم وهو في الثلاثين من عمره إلى الميناء.")
+    p, hero, ch1, ch3 = _novel(writer)
+    writer.write(ch3["document_id"], "عاد نادر وهو في الثلاثين من عمره إلى الميناء.")
     stats = writer.post(f"/v1/projects/{p['id']}/continuity/scan").json()
     assert stats["created"] >= 2
     items = writer.get(f"/v1/projects/{p['id']}/conflicts").json()["items"]
@@ -32,15 +32,15 @@ def test_scenario_B_age_change_in_chapter_is_reported_with_both_spans(writer):
     assert "الثانية عشرة" in pair["evidence"][0]["quote"] and "الثلاثين" in pair["evidence"][1]["quote"]
     assert pair["evidence"][1]["document_id"] == ch3["document_id"]
     # fixing the text auto-resolves the conflict on the next scan
-    writer.write(ch3["document_id"], "عاد سالم وهو في السابعة والعشرين من عمره إلى الميناء.")
+    writer.write(ch3["document_id"], "عاد نادر وهو في السابعة والعشرين من عمره إلى الميناء.")
     writer.post(f"/v1/projects/{p['id']}/continuity/scan")
     assert not [c for c in writer.get(f"/v1/projects/{p['id']}/conflicts").json()["items"] if c["rule"].startswith("R-AGE")]
 
 
 def test_AT08_moving_event_date_creates_conflict_with_evidence(writer):
-    p, salem, ch1, ch3 = _novel(writer)
+    p, hero, ch1, ch3 = _novel(writer)
     ev = writer.post(f"/v1/projects/{p['id']}/events",
-                     json={"title": "رحلة البصرة", "story_time_start": 1960, "participant_ids": [salem["id"]],
+                     json={"title": "رحلة البصرة", "story_time_start": 1960, "participant_ids": [hero["id"]],
                            "node_id": ch3["id"]}).json()
     writer.post(f"/v1/projects/{p['id']}/continuity/scan")
     before = {c["rule"] for c in writer.get(f"/v1/projects/{p['id']}/conflicts").json()["items"]}
@@ -56,14 +56,14 @@ def test_AT08_moving_event_date_creates_conflict_with_evidence(writer):
 
 
 def test_AT09_waiver_for_unreliable_narrator_persists(writer):
-    p, salem, ch1, ch3 = _novel(writer)
-    writer.write(ch3["document_id"], "قال سالم إنه في العشرين من عمره، وكان يكذب كعادته.")
+    p, hero, ch1, ch3 = _novel(writer)
+    writer.write(ch3["document_id"], "قال نادر إنه في العشرين من عمره، وكان يكذب كعادته.")
     writer.post(f"/v1/projects/{p['id']}/continuity/scan")
     c = next(c for c in writer.get(f"/v1/projects/{p['id']}/conflicts").json()["items"] if c["rule"] == "R-AGE-PAIR")
     assert writer.post(f"/v1/projects/{p['id']}/conflicts/{c['id']}/resolve",
                        json={"action": "waive", "note": ""}).status_code == 400
     r = writer.post(f"/v1/projects/{p['id']}/conflicts/{c['id']}/resolve",
-                    json={"action": "waive", "note": "راوٍ غير موثوق: سالم يكذب في عمره عمداً"})
+                    json={"action": "waive", "note": "راوٍ غير موثوق: نادر يكذب في عمره عمداً"})
     assert r.json()["state"] == "waived"
     writer.post(f"/v1/projects/{p['id']}/continuity/scan")
     waived = writer.get(f"/v1/projects/{p['id']}/conflicts", params={"state": "waived"}).json()["items"]

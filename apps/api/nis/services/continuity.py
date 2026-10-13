@@ -45,6 +45,8 @@ _AGE_RE = re.compile(
 
 def norm_with_map(text: str) -> tuple[str, list[int]]:
     """Normalize Arabic text while keeping a char-index map back to the original string."""
+    if not TASHKEEL.search(text) and "\u0640" not in text:  # fast path: 1:1 mapping
+        return text.translate(_NORM_MAP).translate(_EASTERN_DIGITS).lower(), list(range(len(text) + 1))
     out, idx = [], []
     for i, ch in enumerate(text):
         if TASHKEEL.match(ch) or ch == "ـ":
@@ -104,9 +106,25 @@ def _name_variants(c: Character) -> list[str]:
     return sorted(set(out), key=len, reverse=True)
 
 
-def _word_boundary_re(name: str) -> re.Pattern[str]:
-    # Allow common proclitics before the name (و، ف، ب، ل، ك) but not letters after it.
-    return re.compile(r"(?<![^\W_])(?:[وفبلك])?" + re.escape(name) + r"(?![^\W_])")
+class NameMatcher:
+    """One compiled alternation for every name/alias of every character: a single pass per text instead of
+    one regex per (character × variant). Common proclitics (و، ف، ب، ل، ك) may precede a name."""
+
+    def __init__(self, characters: list[Character]):
+        self.owner: dict[str, Character] = {}
+        for c in characters:
+            for v in _name_variants(c):
+                self.owner.setdefault(v, c)
+        names = sorted(self.owner, key=len, reverse=True)
+        self.rx = (re.compile(r"(?<![^\W_])[وفبلك]?(" + "|".join(re.escape(n) for n in names) + r")(?![^\W_])")
+                   if names else None)
+
+    def find(self, norm: str):
+        """Yield (start, end, character) over normalized text."""
+        if self.rx is None:
+            return
+        for m in self.rx.finditer(norm):
+            yield m.start(), m.end(), self.owner[m.group(1)]
 
 
 def _excerpt(text: str, start: int, end: int, pad: int = 60) -> str:
@@ -186,23 +204,16 @@ class Scan:
     def mentions(self) -> tuple[list[Mention], list[AgeMention]]:
         ments: list[Mention] = []
         ages: list[AgeMention] = []
-        variants = [(c, [_word_boundary_re(v) for v in _name_variants(c)]) for c in self.characters]
+        matcher = NameMatcher(self.characters)
         for node in self.nodes:
             doc = self.docs.get(node.id)
             if not doc or not doc.text_plain:
                 continue
             norm, idx = norm_with_map(doc.text_plain)
             char_spans: list[tuple[int, int, Character]] = []
-            for c, pats in variants:
-                taken: list[tuple[int, int]] = []
-                for pat in pats:
-                    for m in pat.finditer(norm):
-                        if any(a <= m.start() < b for a, b in taken):
-                            continue
-                        taken.append((m.start(), m.end()))
-                        char_spans.append((m.start(), m.end(), c))
-                        ments.append(Mention(c.id, node, doc, idx[m.start()], idx[m.end()]))
-            char_spans.sort(key=lambda t: t[0])
+            for a, b, c in matcher.find(norm):
+                char_spans.append((a, b, c))
+                ments.append(Mention(c.id, node, doc, idx[a], idx[b]))
             for m in _AGE_RE.finditer(norm):
                 age = parse_age(m.group("num"))
                 if age is None or age > 130:
@@ -442,4 +453,4 @@ def conflict_out(c: Conflict) -> dict[str, Any]:
     }
 
 
-__all__ = ["run_scan", "conflict_out", "Scan", "parse_age", "norm_with_map", "block_offsets"]
+__all__ = ["run_scan", "conflict_out", "Scan", "NameMatcher", "parse_age", "norm_with_map", "block_offsets"]

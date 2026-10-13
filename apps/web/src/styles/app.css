@@ -22,13 +22,14 @@
   --text-3: #6f86a1;
   --accent: #3a7bc8;
   --accent-soft: rgba(58, 123, 200, 0.16);
+  --accent-text: #8dbbf0;
   --gold: #d4a017;
   --gold-soft: rgba(212, 160, 23, 0.14);
-  --ok: #3fb68b;
+  --ok: #4cc79a;
   --ok-soft: rgba(63, 182, 139, 0.14);
   --warn: #e0a43a;
   --warn-soft: rgba(224, 164, 58, 0.15);
-  --bad: #e5604f;
+  --bad: #f2806f;
   --bad-soft: rgba(229, 96, 79, 0.15);
   --ins: rgba(63, 182, 139, 0.22);
   --del: rgba(229, 96, 79, 0.22);
@@ -48,16 +49,17 @@
   --line-strong: #b9c8d8;
   --text: #0f2236;
   --text-2: #3d556f;
-  --text-3: #6a8097;
+  --text-3: #566b82;
   --accent: #1F4E79;
   --accent-soft: rgba(31, 78, 121, 0.10);
-  --gold: #9a7009;
+  --accent-text: #1F4E79;
+  --gold: #7f5c06;
   --gold-soft: rgba(184, 134, 11, 0.12);
-  --ok: #1f8a63;
+  --ok: #146b4b;
   --ok-soft: rgba(31, 138, 99, 0.12);
-  --warn: #a8700f;
+  --warn: #85560a;
   --warn-soft: rgba(168, 112, 15, 0.12);
-  --bad: #c0392b;
+  --bad: #a52a1d;
   --bad-soft: rgba(192, 57, 43, 0.10);
   --ins: rgba(31, 138, 99, 0.18);
   --del: rgba(192, 57, 43, 0.16);
@@ -82,7 +84,7 @@ body {
   background-size: 32px 32px;
   -webkit-font-smoothing: antialiased;
 }
-a { color: var(--accent); text-decoration: none; }
+a { color: var(--accent-text); text-decoration: none; }
 a:hover { text-decoration: underline; }
 h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: 0; }
 h1 { font-size: 22px; }
@@ -178,7 +180,7 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; 
 .badge.ok { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
 .badge.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
 .badge.bad { color: var(--bad); background: var(--bad-soft); border-color: transparent; }
-.badge.info { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+.badge.info { color: var(--accent-text); background: var(--accent-soft); border-color: transparent; }
 .badge.gold { color: var(--gold); background: var(--gold-soft); border-color: transparent; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--text-3); }
 .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }

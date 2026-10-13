@@ -29,7 +29,7 @@ export function Kpi({ label, value, sub, tone = "", progress }: {
       <div className="value num">{value}</div>
       {sub && <div className="sub">{sub}</div>}
       {progress !== undefined && progress !== null && (
-        <div className="meter" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+        <div className="meter" role="progressbar" aria-label={label} aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
           <span style={{ width: `${Math.min(100, progress * 100)}%` }} />
         </div>
       )}

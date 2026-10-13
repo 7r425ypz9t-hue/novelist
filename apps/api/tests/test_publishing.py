@@ -19,7 +19,7 @@ def book(writer):
     ch2 = writer.node(p["id"], "chapter", "العودة", parent=part["id"])
     content = {"type": "doc", "content": [
         {"type": "paragraph", "content": [
-            {"type": "text", "text": "قال سالم: «سأعود في عام 1972 مع "},
+            {"type": "text", "text": "قال نادر: «سأعود في عام 1972 مع "},
             {"type": "text", "text": "John", "marks": [{"type": "italic"}]},
             {"type": "text", "text": "» ثم مضى", "marks": [{"type": "footnote", "attrs": {"note": "حاشية تجريبية"}}]}]},
         {"type": "blockquote", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "البحر لا يعيد ما يأخذه."}]}]},
@@ -103,7 +103,7 @@ def test_markdown_export(book):
 
 def test_AT21_AT17_data_export_then_verified_restore(book):
     w, p = book
-    w.post(f"/v1/projects/{p['id']}/characters", json={"canonical_name": "سالم", "aliases": ["أبو البحر"]})
+    w.post(f"/v1/projects/{p['id']}/characters", json={"canonical_name": "نادر", "aliases": ["أبو البحر"]})
     w.post(f"/v1/projects/{p['id']}/sources", data={"license_state": "owned", "usage_consent": "true"},
            files={"file": ("notes.txt", "افتتح الميناء عام 1958".encode(), "text/plain")})
     r = w.post(f"/v1/projects/{p['id']}/data-export")

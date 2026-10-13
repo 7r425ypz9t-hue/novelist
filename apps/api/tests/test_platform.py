@@ -53,7 +53,7 @@ def test_AT15_long_manuscript_performance(writer):
     from nis.text import doc_from_plain
 
     chapters = 30 if FULL else 9
-    para = "كان البحر يتنفس ببطء والمدينة تنام على صوته بينما يعدّ سالم السفن العائدة واحدةً واحدة في المساء. "
+    para = "كان البحر يتنفس ببطء والمدينة تنام على صوته بينما يعدّ نادر السفن العائدة واحدةً واحدة في المساء. "
     chapter_text = "\n\n".join(para * 5 for _ in range(100))  # ≈ 5,000 words per chapter
     p = writer.project("اختبار الحمل")
     big_doc = None
@@ -87,3 +87,59 @@ def test_AT15_long_manuscript_performance(writer):
     assert writer.post(f"/v1/projects/{p['id']}/exports", json={"format": "docx"}).status_code == 201
     timings["export_docx"] = time.perf_counter() - t
     print("\nAT15 timings (s):", {k: round(v, 3) for k, v in timings.items()}, "words:", total)
+
+
+@pytest.mark.skipif(os.environ.get("NIS_PERF_FULL") != "1", reason="heavy load test: set NIS_PERF_FULL=1")
+def test_NFR04_thousand_scenes_three_hundred_characters():
+    """NFR04 load shape: 1,000 scenes, 300 characters. Seeded directly through the service layer, then the
+    continuity scan and the full A00 analysis run over it. Times are printed, not asserted beyond sanity."""
+    import uuid as _uuid
+
+    from nis.agents import orchestrator
+    from nis.db import SessionLocal
+    from nis.models import Character, Manuscript, Membership, Project, User
+    from nis.security import hash_password
+    from nis.services.continuity import run_scan
+    from nis.services.manuscript import create_node
+    from nis.text import doc_from_plain
+
+    db = SessionLocal()
+    u = User(email=f"load-{_uuid.uuid4().hex[:6]}@example.test", password_hash=hash_password("x" * 12))
+    db.add(u)
+    db.flush()
+    p = Project(owner_id=u.id, title="حمل")
+    db.add(p)
+    db.flush()
+    db.add(Membership(user_id=u.id, project_id=p.id, role="owner"))
+    m = Manuscript(project_id=p.id, title="حمل")
+    db.add(m)
+    db.flush()
+    names = [f"شخصية{i:03d}" for i in range(300)]
+    for i, n in enumerate(names):
+        db.add(Character(project_id=p.id, canonical_name=n, profile={"birth_year": 1900 + i % 50}))
+    t0 = time.perf_counter()
+    for c in range(50):
+        ch = create_node(db, manuscript=m, parent=None, node_type="chapter", title=f"ف{c}", position=None, user_id=u.id)
+        for s in range(20):
+            k = c * 20 + s
+            text = (f"كان {names[k % 300]} في العاشرة من عمره حين التقى {names[(k * 7) % 300]} عند البحر. "
+                    "ثم مضى الليل طويلاً والموج يضرب الصخور. ") * 6
+            create_node(db, manuscript=m, parent=ch, node_type="scene", title="", position=None, user_id=u.id,
+                        content=doc_from_plain(text), meta={"story_time": 1910 + c})
+    db.commit()
+    seed = time.perf_counter() - t0
+    t = time.perf_counter()
+    stats = run_scan(db, p.id)
+    db.commit()
+    scan = time.perf_counter() - t
+    run, _ = orchestrator.create_run(db, project=p, user_id=u.id, agent_id="A00", skills=None, goal="", scope={},
+                                     idempotency_key=_uuid.uuid4().hex, use_model=False,
+                                     acknowledge_external=False, confirm_high_risk=False)
+    db.commit()
+    t = time.perf_counter()
+    orchestrator.execute(run.id)
+    full = time.perf_counter() - t
+    db.refresh(run)
+    db.close()
+    assert run.status == "succeeded", run.error
+    print(f"\nNFR04: seed {seed:.1f}s · continuity scan {scan:.1f}s ({stats['found']} conflicts) · A00 full run {full:.1f}s")

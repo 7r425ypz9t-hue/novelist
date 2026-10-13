@@ -40,10 +40,10 @@
 | NFR01 | فتح فصل 10k كلمة < 2 ث | 0.015 ث (API، بيئة الاختبار أدناه) | ✅ |
 | NFR02 | حفظ محلي ≤ 1 ث | سجل محلي بعد 0.6 ث من التوقف؛ حالة الخادم منفصلة | ✅ |
 | NFR03 | لا فقد بعد تعطل المتصفح | e2e: إغلاق التبويب قبل المزامنة ثم الاستعادة | ✅ |
-| NFR04 | 150k كلمة، 1000 مشهد، 300 شخصية | 255,000 كلمة/30 فصلاً: كتابة 1.9 ث، فحص استمرارية 2.7 ث، DOCX 2.0 ث | 🟡 لم تُختبر 1000 مشهد/300 شخصية |
+| NFR04 | 150k كلمة، 1000 مشهد، 300 شخصية | 255,000 كلمة/30 فصلاً: فحص استمرارية 2.0 ث، DOCX 2.0 ث · 1,000 مشهد/300 شخصية: فحص استمرارية 2.8 ث، تشغيل A00 الكامل (21 مهارة) 14.5 ث (`test_NFR04_*`) | ✅ |
 | NFR05 | عزل البيانات، IDOR، أسرار في البيئة | `deps.py` + اختبار 15 نقطة | ✅ |
 | NFR06 | RTL عبر Chrome/Firefox/Edge | Chromium فقط في هذه البيئة | 🟡 |
-| NFR07 | WCAG 2.2 AA | أدوار ARIA، تركيز مرئي، لوحة مفاتيح، تقليل الحركة | 🟡 لا تدقيق axe بعد |
+| NFR07 | WCAG 2.2 AA | تدقيق axe-core آلي لـ 12 شاشة + الدخول في السمتين: صفر مخالفات خطيرة/حرجة (`e2e/a11y.spec.ts`) | 🟡 آلي فقط؛ التدقيق البشري وقارئ الشاشة لم يُجريا |
 | NFR08 | استرجاع النسخ الاحتياطية مجرَّب | `scripts/backup.sh` + `scripts/restore_verify.sh` (SQLite وPostgreSQL) + AT17 | ✅ |
 | NFR09 | التوليد قابل للإيقاف ولا يمنع الكتابة | `projects.ai_enabled`, مزود معطّل افتراضياً | `api/test_agents.py::test_disabling_agents_per_project`, `test_AT14_*` ✅ |
 | NFR10 | استبدال المزود دون إعادة تصميم | واجهة `Provider` واحدة | ✅ |
@@ -68,7 +68,7 @@
 | AT12 | Security | `api/test_AT12_*` | ✅ |
 | AT13 | Integration | `api/test_AT13_*` | ✅ |
 | AT14 | E2E | `api/test_AT14_*` | ✅ |
-| AT15 | Performance | `api/test_platform.py::test_AT15_*` (`NIS_PERF_FULL=1`) | 🟡 انظر NFR04 |
+| AT15 | Performance | `api/test_platform.py::test_AT15_*`, `test_NFR04_*` (`NIS_PERF_FULL=1`) | ✅ |
 | AT16 | E2E + Manual | `api/test_AT16_*` ×3 + فتح DOCX في LibreOffice | ✅ |
 | AT17 | DR | `api/test_AT21_AT17_*` + سكربتات النسخ | ✅ |
 | AT18 | Security/UX | `api/test_AT18_*` | ✅ |
@@ -77,4 +77,4 @@
 | AT21 | E2E | `api/test_AT21_AT17_*` | ✅ |
 | AT22 | Integration | `api/test_AT22_*` | ✅ |
 
-**أوامر التشغيل:** `cd apps/api && pytest -q` (60 اختباراً) · `NIS_DATABASE_URL=postgresql+psycopg://… pytest -q` · `cd apps/web && npm test && npx playwright test` (3 سيناريوهات).
+**أوامر التشغيل:** `cd apps/api && pytest -q` (60 اختباراً) · `NIS_DATABASE_URL=postgresql+psycopg://… pytest -q` · `cd apps/web && npm test && npx playwright test` (4 سيناريوهات منها تدقيق الوصول).

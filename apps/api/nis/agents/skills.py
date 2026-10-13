@@ -187,16 +187,13 @@ def sk11_rhythm(ctx: ToolContext, provider: Provider, opts: dict[str, Any]) -> S
 
 
 def mention_map(ctx: ToolContext) -> dict[Any, list[tuple[Any, int]]]:
-    out: dict[Any, list[tuple[Any, int]]] = {}
-    norm_scenes = [(s, normalize_ar(strip_diacritics(s.text))) for s in ctx.scenes]
-    for c in ctx.characters:
-        names = [normalize_ar(n) for n in [c.canonical_name, *(c.aliases or [])] if n.strip()]
-        lst = []
-        for s, nt in norm_scenes:
-            k = sum(len(re.findall(r"(?<![^\W_])[وفبلك]?" + re.escape(n) + r"(?![^\W_])", nt)) for n in names)
-            if k:
-                lst.append((s, k))
-        out[c.id] = lst
+    """character id → [(scene, mentions)] in reading order, one regex pass per scene."""
+    matcher = continuity.NameMatcher(ctx.characters)
+    out: dict[Any, list[tuple[Any, int]]] = {c.id: [] for c in ctx.characters}
+    for s in ctx.scenes:
+        counts: Counter = Counter(c.id for _, _, c in matcher.find(normalize_ar(s.text)))
+        for cid, k in counts.items():
+            out[cid].append((s, k))
     return out
 
 

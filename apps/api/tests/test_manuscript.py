@@ -16,7 +16,7 @@ def _slice(w):
 
 def test_AT01_records_persist_across_sessions(client, writer):
     p, ch, sc = _slice(writer)
-    r = writer.write(sc["document_id"], "كتب سالم أول سطر في دفتره.")
+    r = writer.write(sc["document_id"], "كتب نادر أول سطر في دفتره.")
     assert r.status_code == 200, r.text
     # new session (login again) sees everything
     tok = client.post("/v1/auth/login", json={"email": writer.email, "password": "correct-horse-1"}).json()["token"]
