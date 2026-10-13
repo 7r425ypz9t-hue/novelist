@@ -42,7 +42,7 @@ export function ContinuityPage() {
         <Kpi label="عالية" value={count("high")} tone={count("high") ? "bad" : "ok"} />
         <Kpi label="متوسطة" value={count("medium")} tone="gold" />
         <Kpi label="منخفضة" value={count("low")} />
-        <Kpi label="القواعد الفعالة" value="8" sub="العمر · الوفاة · الحدث/الميلاد · الحدث/المشهد · النطاق · المكان · الأسماء · الحقائق" />
+        <Kpi label="القواعد الفعالة" value="11" sub="العمر ×3 · الوفاة · الحدث ×4 · المكان · الأسماء · الحقائق" />
       </div>
       <Tabs value={state} onChange={setState} items={[["open", "مفتوحة"], ["waived", "مُعفاة"], ["resolved", "محلولة"], ["all", "الكل"]]} />
       {q.isLoading ? <Loading /> : !items.length ? <Card><Empty title="لا تعارضات في هذا العرض" /></Card> : (

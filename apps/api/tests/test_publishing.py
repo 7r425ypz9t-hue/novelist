@@ -64,7 +64,7 @@ def test_AT16_epub_is_valid_rtl_package(book):
     assert z.read("mimetype") == b"application/epub+zip"
     for name in z.namelist():
         if name.endswith((".xhtml", ".opf", ".ncx", ".xml")):
-            minidom.parseString(z.read(name))  # well-formed XML
+            minidom.parseString(z.read(name))  # noqa: S318 - our own generated file; checks well-formedness
     opf = z.read("OEBPS/content.opf").decode()
     assert 'page-progression-direction="rtl"' in opf and "<dc:language>ar</dc:language>" in opf
     nav = z.read("OEBPS/nav.xhtml").decode()

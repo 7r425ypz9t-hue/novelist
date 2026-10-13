@@ -251,6 +251,7 @@ function TreePane({ nodes, pid, manuscriptId, activeId, canWrite, onFlush }: {
   const toast = useToast();
   const [drag, setDrag] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
   const refresh = () => { qc.invalidateQueries({ queryKey: ["tree", pid] }); qc.invalidateQueries({ queryKey: ["dashboard", pid] }); };
   const add = useMutation({
     mutationFn: (b: { type: string; parent_id?: string | null; title: string }) =>
@@ -295,6 +296,7 @@ function TreePane({ nodes, pid, manuscriptId, activeId, canWrite, onFlush }: {
             <button className="btn sm" disabled={!chapterOfActive} title="مشهد في الفصل الحالي"
               onClick={() => chapterOfActive && add.mutate({ type: "scene", parent_id: chapterOfActive.id, title: "" })}>+ مشهد</button>
             <button className="btn sm ghost" onClick={() => add.mutate({ type: "part", title: "جزء جديد" })} title="جزء">+ جزء</button>
+            <button className="btn sm ghost" onClick={() => setImporting(true)} title="استيراد DOCX/MD/TXT">استيراد</button>
           </div>
         )}
       </div>
@@ -328,6 +330,7 @@ function TreePane({ nodes, pid, manuscriptId, activeId, canWrite, onFlush }: {
         </button>
       )}
       <p className="dim" style={{ marginTop: 10 }}>اسحب المشاهد بين الفصول لإعادة الترتيب؛ تبقى المعرفات ثابتة. انقر مرتين لإعادة التسمية.</p>
+      {importing && <ImportModal pid={pid} manuscriptId={manuscriptId} onClose={() => setImporting(false)} onDone={() => { setImporting(false); refresh(); }} />}
     </div>
   );
 }
@@ -479,6 +482,45 @@ function Comments({ doc }: { doc: Doc }) {
 }
 
 /* ───────────── modals ───────────── */
+
+function ImportModal({ pid, manuscriptId, onClose, onDone }: { pid: string; manuscriptId?: string; onClose: () => void; onDone: () => void }) {
+  const toast = useToast();
+  const [preview, setPreview] = useState<{ filename: string; chapters: { title: string; text: string; words: number }[]; total_words: number } | null>(null);
+  const [keep, setKeep] = useState<boolean[]>([]);
+  const load = async (f: File) => {
+    const fd = new FormData();
+    fd.append("file", f);
+    try {
+      const p = await api<any>(`/v1/projects/${pid}/import/preview`, { form: fd });
+      setPreview(p);
+      setKeep(p.chapters.map(() => true));
+    } catch (e) { toast.error(e); }
+  };
+  const commit = async () => {
+    if (!preview) return;
+    try {
+      const chapters = preview.chapters.filter((_, i) => keep[i]).map(({ title, text }) => ({ title, text }));
+      await api(`/v1/projects/${pid}/import/commit`, { body: { manuscript_id: manuscriptId, chapters } });
+      toast.ok(`استُورد ${chapters.length} فصلاً — كل فصل يبدأ بمراجعة «استيراد»`);
+      onDone();
+    } catch (e) { toast.error(e); }
+  };
+  return (
+    <Modal title="استيراد مخطوط (DOCX · MD · TXT)" wide onClose={onClose}
+      footer={preview ? <><span className="dim">{fmt(preview.total_words)} كلمة</span><span style={{ flex: 1 }} /><button className="btn primary" disabled={!keep.some(Boolean)} onClick={commit}>استيراد المحدد</button></> : undefined}>
+      {!preview ? (
+        <Field label="اختر الملف — تُكتشف الفصول من العناوين («الفصل …»، أنماط Heading، #)"><input className="input" type="file" accept=".docx,.md,.txt" onChange={(e) => e.target.files?.[0] && load(e.target.files[0])} /></Field>
+      ) : (
+        <table className="table"><thead><tr><th /><th>الفصل المكتشف</th><th>الكلمات</th><th>البداية</th></tr></thead>
+          <tbody>{preview.chapters.map((c, i) => (
+            <tr key={i}><td><input type="checkbox" checked={keep[i]} onChange={(e) => setKeep(keep.map((k, j) => (j === i ? e.target.checked : k)))} aria-label={`تضمين ${c.title}`} /></td>
+              <td><input className="input" value={c.title} onChange={(e) => setPreview({ ...preview, chapters: preview.chapters.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} /></td>
+              <td className="mono">{fmt(c.words)}</td><td className="dim" style={{ fontFamily: "var(--font-text)" }}>{c.text.slice(0, 90)}…</td></tr>))}
+          </tbody></table>
+      )}
+    </Modal>
+  );
+}
 
 function FootnoteModal({ onClose, onSave }: { onClose: () => void; onSave: (note: string) => void }) {
   const [note, setNote] = useState("");

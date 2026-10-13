@@ -10,7 +10,7 @@ from .services.manuscript import create_node
 from .text import doc_from_plain
 
 DEMO_EMAIL = "demo@nis.local"
-DEMO_PASSWORD = "demo-password-2026"
+DEMO_PASSWORD = "demo-password-2026"  # noqa: S105 - local demo account, documented in README
 
 CH1_S1 = """كانت الريح تأتي من جهة البحر محمّلةً برائحة الملح والخشب المبلول، وكان «سالم» يقف عند باب الدكان يعدّ السفن العائدة واحدةً واحدة.
 

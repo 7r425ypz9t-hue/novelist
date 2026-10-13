@@ -1,0 +1,32 @@
+# Local / single-server deployment. Secrets come from ../.env (never committed). Start:
+#   cp .env.example .env && docker compose -f infra/docker-compose.yml --env-file .env up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nis
+      POSTGRES_USER: nis
+      POSTGRES_PASSWORD: ${NIS_DB_PASSWORD:?set NIS_DB_PASSWORD in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nis -d nis"]
+      interval: 5s
+      retries: 20
+  api:
+    build: { context: .., dockerfile: infra/Dockerfile }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      NIS_DATABASE_URL: postgresql+psycopg://nis:${NIS_DB_PASSWORD}@db:5432/nis
+      NIS_CORS_ORIGINS: '["http://localhost:8000"]'
+      NIS_LLM_PROVIDER: ${NIS_LLM_PROVIDER:-disabled}
+      NIS_LLM_MODEL: ${NIS_LLM_MODEL:-}
+      NIS_LLM_BASE_URL: ${NIS_LLM_BASE_URL:-}
+      NIS_LLM_API_KEY: ${NIS_LLM_API_KEY:-}
+      NIS_ALLOW_REGISTRATION: ${NIS_ALLOW_REGISTRATION:-true}
+    volumes: [nisdata:/data]
+    ports: ["127.0.0.1:8000:8000"]
+volumes:
+  pgdata: {}
+  nisdata: {}

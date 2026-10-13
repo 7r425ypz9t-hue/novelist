@@ -1,0 +1,64 @@
+name: ci
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        db: [sqlite, postgres]
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: nis, POSTGRES_PASSWORD: nis, POSTGRES_DB: nis_test }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U nis" --health-interval 5s --health-retries 20
+    defaults: { run: { working-directory: apps/api } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e ".[dev,postgres]" ruff
+      - run: ruff check nis tests
+      - name: tests
+        env:
+          CI: "true"
+          NIS_DATABASE_URL: ${{ matrix.db == 'postgres' && 'postgresql+psycopg://nis:nis@127.0.0.1:5432/nis_test' || '' }}
+        run: |
+          if [ -z "$NIS_DATABASE_URL" ]; then unset NIS_DATABASE_URL; fi
+          python -m pytest -q
+      - name: security lint (bandit rules via ruff S)
+        run: ruff check --select S nis
+
+  web:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: apps/web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: apps/web/package-lock.json }
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx vite build
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: pip install -e "apps/api[dev]"
+      - working-directory: apps/web
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npx vite build
+          NIS_PYTHON=python npx playwright test

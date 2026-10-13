@@ -11,9 +11,7 @@ _N, _R, _P, _DKLEN = 2**14, 8, 1, 32
 def hash_password(password: str) -> str:
     salt = secrets.token_bytes(16)
     dk = hashlib.scrypt(password.encode(), salt=salt, n=_N, r=_R, p=_P, dklen=_DKLEN)
-    return "scrypt${}${}${}${}${}".format(
-        _N, _R, _P, base64.b64encode(salt).decode(), base64.b64encode(dk).decode()
-    )
+    return f"scrypt${_N}${_R}${_P}${base64.b64encode(salt).decode()}${base64.b64encode(dk).decode()}"
 
 
 def verify_password(password: str, stored: str) -> bool:

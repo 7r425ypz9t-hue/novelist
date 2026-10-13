@@ -227,7 +227,7 @@ class Scan:
         for a in ages:
             by_char.setdefault(a.character.id, []).append(a)
 
-        for cid, lst in by_char.items():
+        for lst in by_char.values():
             c = lst[0].character
             birth, _ = self.char_years(c)
             lst.sort(key=lambda a: self.order.get(a.node.id, 0))

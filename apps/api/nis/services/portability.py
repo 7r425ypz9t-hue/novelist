@@ -89,7 +89,7 @@ def export_archive(db: Session, project: Project) -> bytes:
         "manifest.json: بصمات SHA-256 للتحقق من سلامة الأرشيف قبل الاسترجاع.\n"
         "الاحتفاظ: الحذف من التطبيق نهائي؛ النسخ الاحتياطية لقاعدة البيانات تُدار حسب سياسة المشغّل الموثقة "
         "في docs/operations.md.\n"
-    ).encode("utf-8")
+    ).encode()
     manifest = {
         "format": FORMAT, "exported_at": datetime.now(UTC).isoformat(), "project_id": str(project.id),
         "files": {k: sha256_hex(v) for k, v in files.items()},
