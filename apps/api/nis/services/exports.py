@@ -146,7 +146,7 @@ def to_docx(book: Book) -> bytes:
     from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
-    from docx.shared import Pt
+    from docx.shared import Pt, RGBColor
 
     d = docx.Document()
     rtl = book.language.startswith("ar")
@@ -160,9 +160,11 @@ def to_docx(book: Book) -> bytes:
         for attr in ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia"):
             fonts.set(qn(attr), FONT_NAME)
         for tag in ("w:sz", "w:szCs"):
-            el = rpr.find(qn(tag)) or OxmlElement(tag)
+            el = rpr.find(qn(tag))
+            if el is None:
+                el = OxmlElement(tag)
+                rpr.append(el)
             el.set(qn("w:val"), str(int(size_pt * 2)))
-            rpr.append(el)
         if bold:
             rpr.append(OxmlElement("w:bCs"))
         if rtl:
@@ -183,6 +185,7 @@ def to_docx(book: Book) -> bytes:
         st = d.styles[name]
         st.font.name = FONT_NAME
         st.font.size = Pt(size)
+        st.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
         set_run_fonts(st.element, size, bold=True)
     if rtl:
         sect = d.sections[0]._sectPr
@@ -303,6 +306,8 @@ def _pdf_fonts() -> tuple[str, str]:
 
 
 def _shape(text: str) -> str:
+    """Contextual shaping + bidi reordering. ReportLab has no mark positioning (GPOS), so optional tashkeel is
+    dropped in PDF only (DOCX/EPUB keep it) — documented limitation."""
     import arabic_reshaper
     from bidi.algorithm import get_display
 
@@ -369,7 +374,7 @@ def to_pdf(book: Book) -> bytes:
         elif it.kind == "scene_break":
             need(lead * 2)
             y -= lead * 0.4
-            pages[-1].append(("center", SCENE_BREAK, reg, body, y))
+            pages[-1].append(("center", "*   *   *", reg, body, y))  # ⁂ is not in the embedded font
             y -= lead * 1.2
         elif it.kind == "notes":
             need(lead * 2)

@@ -158,6 +158,7 @@ def import_archive(db: Session, raw: bytes, owner_id: uuid.UUID) -> Project:
         ai_enabled=p.get("ai_enabled", True), nlqi_weights=p.get("nlqi_weights") or {},
     )
     db.add(project)
+    db.flush()
     db.add(Membership(user_id=owner_id, project_id=project.id, role="owner"))
     db.flush()
     pending_docs: list[tuple[Document, str | None]] = []
