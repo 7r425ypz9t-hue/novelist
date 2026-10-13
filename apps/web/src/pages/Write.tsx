@@ -4,7 +4,7 @@ import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { DragEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { DragEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Character, Doc, Place, Proposal, Revision, TreeNode } from "../api/types";
@@ -12,7 +12,7 @@ import { useProject } from "../App";
 import { Icon } from "../components/Icon";
 import { HijriPicker } from "../components/HijriPicker";
 import { DiffView, Empty, Field, Modal, Status, Tabs, useToast } from "../components/ui";
-import { ago, countWords, docText, fmt } from "../lib/arabic";
+import { ago, arabicPattern, countWords, docText, fmt, type SearchOpts } from "../lib/arabic";
 import { SAVE_LABEL, useAutosave } from "../lib/autosave";
 import { journalClear, journalGet } from "../lib/offline";
 
@@ -50,6 +50,8 @@ export function WritePage() {
   const [hideR, setHideR] = useState(false);
   const [live, setLive] = useState(0);
   const [modal, setModal] = useState<null | "find" | "footnote" | "checkpoint">(null);
+  // a manuscript-wide search hit in another unit: select it once that unit's document is loaded
+  const jumpRef = useRef<{ docId: string; q: string; opts: SearchOpts; index: number } | null>(null);
 
   useEffect(() => {
     if (!nodeId && nodes.length) {
@@ -99,6 +101,13 @@ export function WritePage() {
       editor.commands.setContent(content, { emitUpdate: false });
       editor.setEditable(canWrite);
       setLive(countWords(docText(content)));
+      const j = jumpRef.current;
+      if (j && j.docId === d.id) {
+        jumpRef.current = null;
+        const re = arabicPattern(j.q, j.opts);
+        const m = re ? editorMatches(editor, re)[j.index] : undefined;
+        if (m) requestAnimationFrame(() => editor.chain().focus().setTextSelection(m).scrollIntoView().run());
+      }
       if (pending) {
         if (pending.baseVersion === d.version) saver.change(content);
         else saver.change(pending.content);
@@ -208,7 +217,15 @@ export function WritePage() {
         editor.chain().focus().setMark("footnote", { note }).run();
         setModal(null);
       }} />}
-      {modal === "find" && editor && <FindReplace editor={editor} onClose={() => setModal(null)} />}
+      {modal === "find" && editor && <FindReplace editor={editor} currentNodeId={nodeId} onClose={() => setModal(null)}
+        onJump={(hit, q, opts, index) => {
+          setModal(null);
+          if (hit.node_id === nodeId) {
+            const re = arabicPattern(q, opts);
+            const m = re ? editorMatches(editor, re)[index] : undefined;
+            if (m) editor.chain().focus().setTextSelection(m).scrollIntoView().run();
+          } else { jumpRef.current = { docId: hit.document_id, q, opts, index }; nav(`/p/${pid}/write/${hit.node_id}`); }
+        }} />}
       {modal === "checkpoint" && editor && <CheckpointModal onClose={() => setModal(null)} onSave={async (lbl) => {
         try { await saver.checkpoint(editor.getJSON(), lbl); toast.ok("حُفظت نقطة مراجعة مسماة"); setModal(null); } catch (e) { toast.error(e); }
       }} />}
@@ -544,23 +561,59 @@ function CheckpointModal({ onClose, onSave }: { onClose: () => void; onSave: (la
   );
 }
 
-function FindReplace({ editor, onClose }: { editor: any; onClose: () => void }) {
+type Range = { from: number; to: number };
+type SearchHit = { node_id: string; document_id: string; label: string; title: string; count: number;
+  snippets: { before: string; match: string; after: string }[] };
+
+/* Matches inside each paragraph across formatting boundaries (bold/footnote runs split text nodes). */
+function editorMatches(editor: any, re: RegExp): Range[] {
+  const out: Range[] = [];
+  editor.state.doc.descendants((node: any, pos: number) => {
+    if (!node.isTextblock) return true;
+    let text = "";
+    const at: number[] = [];
+    node.forEach((child: any, off: number) => {
+      const t = child.isText ? child.text : "\uFFFC";
+      for (let i = 0; i < t.length; i++) at.push(pos + 1 + off + i);
+      text += t;
+    });
+    for (const m of text.matchAll(re)) if (m[0].length) out.push({ from: at[m.index!], to: at[m.index! + m[0].length - 1] + 1 });
+    return false;
+  });
+  return out;
+}
+
+function FindReplace({ editor, currentNodeId, onClose, onJump }: {
+  editor: any; currentNodeId?: string; onClose: () => void;
+  onJump: (hit: SearchHit, q: string, opts: SearchOpts, index: number) => void;
+}) {
+  const { pid } = useParams();
+  const [scope, setScope] = useState<"unit" | "all">("unit");
   const [find, setFind] = useState("");
   const [repl, setRepl] = useState("");
+  const [opts, setOpts] = useState<Required<SearchOpts>>({ ignoreMarks: true, unifyLetters: true, wholeWord: false });
+  const [k, setK] = useState(0);
   const toast = useToast();
-  const matches = useMemo(() => {
-    const out: { from: number; to: number }[] = [];
-    if (!find) return out;
-    editor.state.doc.descendants((n: any, pos: number) => {
-      if (!n.isText) return;
-      let i = n.text.indexOf(find);
-      while (i >= 0) { out.push({ from: pos + i, to: pos + i + find.length }); i = n.text.indexOf(find, i + find.length); }
-    });
-    return out;
-  }, [find, editor.state.doc]);
-  const goto = (k: number) => {
-    const m = matches[k];
-    if (m) editor.chain().focus().setTextSelection(m).scrollIntoView().run();
+  const re = useMemo(() => arabicPattern(find, opts), [find, opts]);
+  const matches = useMemo(() => (re ? editorMatches(editor, re) : []), [re, editor.state.doc]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [submitted, setSubmitted] = useState<{ q: string; opts: SearchOpts } | null>(null);
+  const all = useQuery<{ total: number; units: number; items: SearchHit[] }>({
+    queryKey: ["ms-search", pid, submitted],
+    enabled: !!submitted,
+    queryFn: () => api(`/v1/projects/${pid}/manuscript/search?` + new URLSearchParams({
+      q: submitted!.q, ignore_marks: String(submitted!.opts.ignoreMarks), unify_letters: String(submitted!.opts.unifyLetters),
+      whole_word: String(submitted!.opts.wholeWord) })),
+  });
+  const goto = (i: number) => {
+    if (!matches.length) return;
+    const j = (i + matches.length) % matches.length;
+    setK(j);
+    editor.chain().setTextSelection(matches[j]).scrollIntoView().run();
+  };
+  const replaceOne = () => {
+    const m = matches[k % Math.max(1, matches.length)];
+    if (!m) return;
+    (repl ? editor.chain().insertContentAt(m, { type: "text", text: repl }) : editor.chain().deleteRange(m)).run();
   };
   const replaceAll = () => {
     if (!matches.length) return;
@@ -569,14 +622,52 @@ function FindReplace({ editor, onClose }: { editor: any; onClose: () => void }) 
     editor.view.dispatch(tr);
     toast.ok(`استُبدل ${matches.length} موضعاً (يمكن التراجع)`);
   };
+  const opt = (key: keyof SearchOpts, label: string) => (
+    <label className="check"><input type="checkbox" checked={opts[key]} onChange={(e) => { setOpts({ ...opts, [key]: e.target.checked }); setK(0); }} /> {label}</label>
+  );
+  const searchAll = () => { if (find.trim()) setSubmitted({ q: find.trim(), opts: { ...opts } }); };
   return (
-    <Modal title="بحث واستبدال" onClose={onClose}
-      footer={<><span className="dim">{matches.length} نتيجة</span><button className="btn" disabled={!matches.length} onClick={() => goto(0)}>انتقل للأولى</button>
-        <button className="btn primary" disabled={!matches.length || !editor.isEditable} onClick={replaceAll}>استبدال الكل</button></>}>
+    <Modal title="بحث واستبدال" wide onClose={onClose}
+      footer={scope === "unit" ? <>
+        <span className="dim" aria-live="polite">{matches.length ? `${k + 1} من ${matches.length}` : "لا نتائج"}</span>
+        <button className="btn" disabled={!matches.length} onClick={() => goto(k - 1)}>السابق</button>
+        <button className="btn" disabled={!matches.length} onClick={() => goto(k + 1)}>التالي</button>
+        <button className="btn" disabled={!matches.length || !editor.isEditable} onClick={replaceOne}>استبدال هذا</button>
+        <button className="btn primary" disabled={!matches.length || !editor.isEditable} onClick={replaceAll}>استبدال الكل</button>
+      </> : <>
+        <span className="dim" aria-live="polite">{all.data ? `${all.data.total} موضعاً في ${all.data.units} وحدة` : ""}</span>
+        <button className="btn primary" disabled={!find.trim() || all.isFetching} onClick={searchAll}>ابحث في المخطوط</button>
+      </>}>
+      <Tabs value={scope} onChange={setScope} items={[["unit", "في هذه الوحدة"], ["all", "في كامل المخطوط"]]} />
       <div className="form-grid">
-        <Field label="ابحث عن"><input className="input" autoFocus value={find} onChange={(e) => setFind(e.target.value)} /></Field>
-        <Field label="استبدل بـ"><input className="input" value={repl} onChange={(e) => setRepl(e.target.value)} /></Field>
+        <Field label="ابحث عن"><input className="input" autoFocus value={find}
+          onChange={(e) => { setFind(e.target.value); setK(0); }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); scope === "all" ? searchAll() : goto(e.shiftKey ? k - 1 : k + (matches.length && editor.state.selection.from === matches[k]?.from ? 1 : 0)); } }} /></Field>
+        {scope === "unit" && <Field label="استبدل بـ"><input className="input" value={repl} onChange={(e) => setRepl(e.target.value)} /></Field>}
+        <div className="row full" style={{ flexWrap: "wrap", gap: 14 }}>
+          {opt("ignoreMarks", "تجاهل التشكيل والتطويل")}
+          {opt("unifyLetters", "توحيد الهمزات والتاء المربوطة والألف المقصورة والأرقام")}
+          {opt("wholeWord", "كلمة كاملة")}
+        </div>
       </div>
+      {scope === "all" && (
+        <div className="stack scroll-y" style={{ maxHeight: "48vh", marginTop: 10, gap: 8 }}>
+          {all.isError && <div className="alert bad">تعذّر البحث</div>}
+          {all.data && !all.data.items.length && <Empty title="لا نتائج في المخطوط" />}
+          {all.data?.items.map((h) => (
+            <div key={h.node_id} className="evidence">
+              <div className="row between"><strong>{h.label || h.title || "وحدة"}{h.title && h.label && ` — ${h.title}`}</strong>
+                <span className="row">{h.node_id === currentNodeId && <span className="badge info">الوحدة الحالية</span>}<span className="badge">{h.count}</span></span></div>
+              {h.snippets.map((sn, i) => (
+                <button key={i} className="find-hit" onClick={() => onJump(h, submitted!.q, submitted!.opts, i)}>
+                  …{sn.before}<mark>{sn.match}</mark>{sn.after}…
+                </button>
+              ))}
+              {h.count > h.snippets.length && <div className="dim">و{h.count - h.snippets.length} موضعاً آخر في هذه الوحدة</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </Modal>
   );
 }

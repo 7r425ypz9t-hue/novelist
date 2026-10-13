@@ -45,3 +45,24 @@ export function docText(doc: any): string {
   };
   return walk(doc);
 }
+
+/* Arabic-aware literal search — mirrors apps/api/nis/text.py → arabic_pattern (keep the two in step). */
+const MARKS = "[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]*";
+const LOOSE: Record<string, string> = {};
+for (const g of ["اأإآٱ", "يىئ", "هة", "وؤ"]) for (const c of g) LOOSE[c] = `[${g}]`;
+for (let d = 0; d < 10; d++) {
+  const cls = `[${d}${"٠١٢٣٤٥٦٧٨٩"[d]}${"۰۱۲۳۴۵۶۷۸۹"[d]}]`;
+  LOOSE[String(d)] = LOOSE["٠١٢٣٤٥٦٧٨٩"[d]] = LOOSE["۰۱۲۳۴۵۶۷۸۹"[d]] = cls;
+}
+const esc = (c: string) => c.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&");
+
+export type SearchOpts = { ignoreMarks?: boolean; unifyLetters?: boolean; wholeWord?: boolean };
+
+export function arabicPattern(query: string, { ignoreMarks = true, unifyLetters = true, wholeWord = false }: SearchOpts = {}): RegExp | null {
+  const q = (ignoreMarks ? stripDiacritics(query) : query).trim();
+  if (!q) return null;
+  const parts = [...q].map((c) => (/\s/.test(c) ? "[^\\S\\n]+" : unifyLetters ? LOOSE[c] ?? esc(c) : esc(c)));
+  let body = parts.join(ignoreMarks ? MARKS : "") + (ignoreMarks ? MARKS : "");
+  if (wholeWord) body = `(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`;
+  return new RegExp(body, "giu");
+}

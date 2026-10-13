@@ -76,3 +76,20 @@ def test_sanitize_strips_unknown_nodes_marks_and_attrs():
     assert clean["content"][0]["type"] == "paragraph"
     assert clean["content"][1]["attrs"] == {"dir": "rtl"}
     assert "marks" not in clean["content"][1]["content"][0]
+
+
+def test_arabic_pattern_ignores_marks_and_unifies_letter_forms():
+    from nis.text import arabic_pattern
+
+    text = "قالَ إنّ الحياةَ قصيرةٌ، ثمّ إنتهى في عام ١٩٥٨ والمدرسـة."
+    def hits(q, **kw):
+        return [m.group() for m in arabic_pattern(q, **kw).finditer(text)]
+    assert hits("الحياة") == ["الحياةَ"]                   # trailing fatha stays inside the match
+    assert hits("قصيره") == ["قصيرةٌ"]                     # ه/ة unified, tanween skipped
+    assert hits("1958") == ["١٩٥٨"]                        # Western ↔ Eastern digits
+    assert hits("المدرسة") == ["المدرسـة"]                 # tatweel skipped
+    assert hits("ان", whole_word=True) == ["إنّ"]          # not inside «إنتهى»
+    assert hits("ان", unify_letters=False) == []           # strict letter forms
+    assert hits("الحياةَ", ignore_marks=False) == ["الحياةَ"]
+    assert arabic_pattern("   ") is None
+    assert hits("(.*)+") == []                              # user input is literal, never a regex

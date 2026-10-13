@@ -127,3 +127,22 @@ def test_import_preview_and_commit(writer):
     assert r.status_code == 201 and len(r.json()["created"]) == 2
     dash = writer.get(f"/v1/projects/{p['id']}/dashboard").json()
     assert dash["counts"]["chapters"] == 2 and dash["words"] == 6
+
+
+def test_manuscript_search_is_arabic_aware_ordered_and_member_only(writer, other):
+    p, ch, sc = _slice(writer)
+    sc2 = writer.node(p["id"], "scene", "المشهد الثاني", parent=ch["id"])
+    assert writer.write(sc["document_id"], "وصلت السفينةُ إلى الميناء.\n\nثم غادرت السفينه فجراً.").status_code == 200
+    assert writer.write(sc2["document_id"], "لم يبقَ في المرفأ إلا سفينة واحدة.").status_code == 200
+    r = writer.get(f"/v1/projects/{p['id']}/manuscript/search", params={"q": "السفينة"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] == 2 and body["units"] == 1                      # «سفينة» alone is not «السفينة»
+    hit = body["items"][0]
+    assert hit["node_id"] == sc["id"] and hit["label"].endswith("المشهد 1")
+    assert [s["match"] for s in hit["snippets"]] == ["السفينةُ", "السفينه"]
+    assert writer.get(f"/v1/projects/{p['id']}/manuscript/search", params={"q": "سفينة"}).json()["total"] == 3
+    assert writer.get(f"/v1/projects/{p['id']}/manuscript/search",
+                      params={"q": "سفينة", "whole_word": True}).json()["total"] == 1
+    assert other.get(f"/v1/projects/{p['id']}/manuscript/search", params={"q": "سفينة"}).status_code == 404
+    assert writer.get(f"/v1/projects/{p['id']}/manuscript/search", params={"q": "x" * 201}).status_code == 422

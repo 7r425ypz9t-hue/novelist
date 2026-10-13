@@ -143,3 +143,24 @@ test("R4 — story time can be entered in the Hijri calendar", async ({ page }) 
   await page.getByRole("button", { name: "حفظ المصفوفة" }).click();
   await expect(page.getByText("حُفظت مصفوفة المشهد")).toBeVisible();
 });
+
+test("FR04 — Arabic-aware find: tashkeel, hamza and taa forms match; whole-manuscript hits jump to the unit", async ({ page }) => {
+  await register(page, "finder");
+  await newNovelWithScene(page, "رواية البحث");
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.insertText("قالت إنّ الحياةَ قصيرةٌ، وإنتهى الكلام.");
+  await expect(saveState(page)).toHaveText(/محفوظ على الخادم/, { timeout: 15_000 });
+  await page.keyboard.press("Control+f");
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("ابحث عن").fill("ان الحياة قصيره");
+  await expect(dialog.getByText("1 من 1")).toBeVisible();
+  await dialog.getByLabel("كلمة كاملة").check();
+  await dialog.getByLabel("ابحث عن").fill("ان");
+  await expect(dialog.getByText("1 من 1")).toBeVisible();       // «إنّ» yes, «وإنتهى» no
+  await dialog.getByRole("tab", { name: "في كامل المخطوط" }).click();
+  await dialog.getByRole("button", { name: "ابحث في المخطوط" }).click();
+  await expect(dialog.getByText("1 موضعاً في 1 وحدة")).toBeVisible();
+  await dialog.locator(".find-hit").first().click();
+  await expect(dialog).toBeHidden();
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe("إنّ");
+});

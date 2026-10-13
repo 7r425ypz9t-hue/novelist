@@ -44,6 +44,40 @@ def normalize_ar(s: str) -> str:
     return strip_diacritics(s).translate(_NORM_MAP).translate(_EASTERN_DIGITS).lower()
 
 
+_MARKS = "[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]*"  # tashkeel + tatweel, skipped between letters
+_LOOSE_GROUPS = ("اأإآٱ", "يىئ", "هة", "وؤ")
+_LOOSE_CLASS = {c: "[" + g + "]" for g in _LOOSE_GROUPS for c in g}
+_LOOSE_CLASS.update({w: f"[{w}{e}{p}]" for w, e, p in zip("0123456789", "٠١٢٣٤٥٦٧٨٩", "۰۱۲۳۴۵۶۷۸۹", strict=True)})
+_LOOSE_CLASS.update({e: _LOOSE_CLASS[w] for w, e in zip("0123456789", "٠١٢٣٤٥٦٧٨٩", strict=True)})
+_LOOSE_CLASS.update({p: _LOOSE_CLASS[w] for w, p in zip("0123456789", "۰۱۲۳۴۵۶۷۸۹", strict=True)})
+
+
+def arabic_pattern(query: str, *, ignore_marks: bool = True, unify_letters: bool = True,
+                   whole_word: bool = False) -> re.Pattern[str] | None:
+    """Literal search pattern for Arabic prose (mirrored in apps/web/src/lib/arabic.ts → arabicPattern).
+
+    ignore_marks: the query's own tashkeel/tatweel are dropped and any marks in the text are skipped.
+    unify_letters: أ/إ/آ/ٱ/ا, ي/ى/ئ, ه/ة, و/ؤ and Western/Eastern digits match each other.
+    The query is always escaped (no user regex) and the pattern is linear, so it cannot backtrack badly.
+    """
+    q = strip_diacritics(query) if ignore_marks else query
+    q = q.strip()
+    if not q:
+        return None
+    parts = []
+    for ch in q:
+        if ch.isspace():
+            parts.append(r"[^\S\n]+")  # spaces inside one paragraph only
+            continue
+        parts.append(_LOOSE_CLASS.get(ch, re.escape(ch)) if unify_letters else re.escape(ch))
+    body = (_MARKS if ignore_marks else "").join(parts)
+    if ignore_marks:
+        body += _MARKS  # keep a trailing shadda/tanween inside the match
+    if whole_word:
+        body = r"(?<![^\W_])" + body + r"(?![^\W_])"
+    return re.compile(body, re.IGNORECASE)
+
+
 def words(s: str) -> list[str]:
     return WORD_RE.findall(strip_diacritics(s))
 

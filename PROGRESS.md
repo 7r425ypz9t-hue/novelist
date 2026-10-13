@@ -18,6 +18,8 @@
 - [x] Local search expansion: morphology, curated synonyms, Story Bible aliases — transparent, synonyms never evidence alone.
 - [x] Fictional-world calendars per project (months, epoch, ratio) alongside Hijri.
 - [x] Encryption at rest (AES-256-GCM, server key) for manuscript, revisions, source chunks, comments; `nis encrypt-existing` for legacy rows.
+- [x] Typography: Amiri (OFL) across UI and every export; manuscript 14px / line-height 1.5; «سكرتارية التحرير» dashboard with fixed motto.
+- [x] Arabic-aware find & replace (tashkeel/tatweel, hamza/taa/alef-maqsura/digit forms, whole word) in the unit and read-only across the manuscript with jump-to-hit. Not yet timed on the 255k-word fixture.
 
 Open items (TODO, not done):
 - [ ] Docker image build not executed in this environment (no Docker daemon); compose file is untested.

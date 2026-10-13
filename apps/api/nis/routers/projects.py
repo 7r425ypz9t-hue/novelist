@@ -6,7 +6,7 @@ import uuid
 from collections import defaultdict
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, File, Header, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Header, Query, Response, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -58,7 +58,7 @@ from ..services.manuscript import (
     revision_out,
     save_document,
 )
-from ..text import count_words, diff_texts, diff_stats, doc_from_plain
+from ..text import arabic_pattern, count_words, diff_texts, diff_stats, doc_from_plain
 
 router = APIRouter(prefix="/v1", tags=["manuscript"])
 
@@ -242,6 +242,35 @@ def tree(acc: Access = Depends(project_access), db: Session = Depends(get_db)):
                                    "author_name": m.author_name},
                     "nodes": [{**node_out(n, docs.get(n.id)), "label": lb.get(n.id, "")} for n in nodes]})
     return {"manuscripts": out}
+
+
+@router.get("/projects/{project_id}/manuscript/search")
+def manuscript_search(q: str = Query(min_length=1, max_length=200), ignore_marks: bool = True,
+                      unify_letters: bool = True, whole_word: bool = False,
+                      acc: Access = Depends(project_access), db: Session = Depends(get_db)):
+    """Read-only, Arabic-aware find across every live unit of the project, in reading order."""
+    pat = arabic_pattern(q, ignore_marks=ignore_marks, unify_letters=unify_letters, whole_word=whole_word)
+    if pat is None:
+        raise bad_request("عبارة البحث فارغة")
+    docs = {d.node_id: d for d in db.scalars(select(Document).where(Document.project_id == acc.project.id))}
+    items, total, max_snips = [], 0, 20
+    for m in db.scalars(select(Manuscript).where(Manuscript.project_id == acc.project.id).order_by(Manuscript.position)):
+        nodes = ordered_nodes(db, m.id)
+        lb = labels(nodes)
+        for n in nodes:
+            d = docs.get(n.id)
+            if d is None or not d.text_plain:
+                continue
+            text = d.text_plain
+            found = list(pat.finditer(text))
+            if not found:
+                continue
+            total += len(found)
+            snips = [{"before": text[max(0, f.start() - 40):f.start()].split("\n")[-1], "match": f.group(),
+                      "after": text[f.end():f.end() + 40].split("\n")[0], "offset": f.start()} for f in found[:max_snips]]
+            items.append({"node_id": str(n.id), "document_id": str(d.id), "type": n.type, "title": n.title,
+                          "label": lb.get(n.id, ""), "count": len(found), "snippets": snips})
+    return {"query": q, "total": total, "units": len(items), "items": items}
 
 
 @router.post("/projects/{project_id}/nodes", status_code=201)
