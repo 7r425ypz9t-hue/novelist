@@ -62,13 +62,24 @@ def get_run(run_id: uuid.UUID, user: User = Depends(current_user), db: Session =
 def cancel_run(run_id: uuid.UUID, user: User = Depends(current_user), db: Session = Depends(get_db)):
     run, acc = _run(db, user, run_id)
     acc.require("run_agents")
-    if run.status in ("succeeded", "failed", "cancelled"):
+    if run.status in orchestrator.TERMINAL:
         return orchestrator.run_out(run)
     run.cancel_requested = True
     if run.status == "queued":
         run.status = "cancelled"
     audit.record(db, "agent_run.cancel", actor_id=user.id, project_id=run.project_id, object_id=run.id)
     db.commit()
+    return orchestrator.run_out(run)
+
+
+@router.post("/agents/runs/{run_id}/retry", status_code=202)
+def retry_run(run_id: uuid.UUID, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    run, acc = _run(db, user, run_id)
+    acc.require("run_agents")
+    orchestrator.retry(db, run, user.id)
+    db.commit()
+    orchestrator.submit(run.id)
+    db.refresh(run)
     return orchestrator.run_out(run)
 
 

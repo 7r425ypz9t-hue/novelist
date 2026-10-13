@@ -285,6 +285,9 @@ table.table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 .find-hit { display: block; width: 100%; text-align: start; background: none; border: 0; border-top: 1px solid var(--line); padding: 6px 2px; font: inherit; font-family: var(--font-text); color: var(--text-2); cursor: pointer; }
 .find-hit:hover, .find-hit:focus-visible { background: var(--accent-soft); color: var(--text); }
 .find-hit mark { background: var(--gold-soft); color: var(--text); border-radius: 2px; padding: 0 1px; }
+.run-progress { margin: 4px 0 12px; }
+.run-progress .meter { margin-top: 6px; }
+.bad-text { color: var(--bad-text, var(--bad)); font-size: var(--fs-sm); }
 .motto { font-family: var(--font-text); font-size: var(--fs-h3); color: var(--text-2); margin: 2px 0 0; }
 .paper .ProseMirror { font-family: var(--font-text); font-size: var(--fs-paper); line-height: var(--paper-leading); outline: none; min-height: 50vh; text-align: justify; }
 .paper .ProseMirror p { margin: 0 0 .5em; }

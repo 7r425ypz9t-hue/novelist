@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import threading
-import traceback
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -24,12 +24,23 @@ from ..models import AgentRun, Consent, Document, Project, utcnow
 from ..security import sha256_hex
 from . import skills as skills_mod
 from .context import ToolContext
-from .providers import Provider, estimate_cost, get_provider
+from .providers import Provider, ProviderUnavailable, estimate_cost, get_provider
 from .registry import AGENTS, PIPELINE, SKILLS
 
 log = logging.getLogger("nis.orchestrator")
 _pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="nis-run")
 _lock = threading.Lock()
+TERMINAL = ("succeeded", "partial", "failed", "cancelled")
+RETRYABLE = ("partial", "failed", "cancelled")
+
+
+def _user_error(e: BaseException) -> str:
+    """What the author sees. The traceback goes to the server log only (with the run id), never to the panel."""
+    if isinstance(e, ProviderUnavailable):
+        return f"تعذّر الوصول إلى مزوّد النماذج: {e}"
+    if isinstance(e, TimeoutError):
+        return "انتهت مهلة المهارة قبل أن تكتمل."
+    return f"تعذّر تنفيذ هذه الخطوة ({type(e).__name__}). لم يتغيّر أي نص؛ يمكن إعادة المحاولة."
 
 
 def plan(agent_id: str, requested: list[str] | None) -> list[tuple[str, str]]:
@@ -123,11 +134,13 @@ def execute(run_id: uuid.UUID) -> None:
     db = SessionLocal()
     try:
         _execute(db, run_id)
-    except Exception:  # noqa: BLE001 - recorded on the run
+    except Exception as e:  # noqa: BLE001 - recorded on the run, traceback logged
+        log.exception("agent run %s crashed outside a step", run_id)
         db.rollback()
         run = db.get(AgentRun, run_id)
         if run:
-            run.status, run.error, run.finished_at = "failed", traceback.format_exc(limit=3)[-2000:], utcnow()
+            run.status, run.finished_at = "failed", utcnow()
+            run.error = f"توقّف التشغيل لخطأ داخلي ({type(e).__name__}) — المرجع في سجل الخادم: {run_id}"
             db.commit()
     finally:
         db.close()
@@ -136,7 +149,7 @@ def execute(run_id: uuid.UUID) -> None:
 def _execute(db: Session, run_id: uuid.UUID) -> None:
     with _lock:
         run = db.get(AgentRun, run_id)
-        if not run or run.status in ("succeeded", "failed", "cancelled"):
+        if not run or run.status in TERMINAL:
             return
         run.status = "running"
         run.started_at = run.started_at or utcnow()
@@ -166,10 +179,24 @@ def _execute(db: Session, run_id: uuid.UUID) -> None:
         if fn is None:
             _mark(run, i, "skipped", note="مهارة غير منفذة")
             continue
-        res = fn(ctx, provider, opts)
+        _mark(run, i, "running", started=started.isoformat(), error="")
+        db.commit()
+        t0 = time.perf_counter()
+        try:
+            res = fn(ctx, provider, opts)
+            db.flush()
+        except Exception as e:  # noqa: BLE001 — one failing skill must not sink the run
+            log.exception("agent run %s step %s:%s failed", run.id, step["agent"], step["skill"])
+            db.rollback()  # discards anything this step half-wrote (e.g. proposals); earlier steps are committed
+            run = db.get(AgentRun, run_id)
+            _mark(run, i, "failed", finished=utcnow().isoformat(),
+                  duration_ms=round((time.perf_counter() - t0) * 1000), error=_user_error(e))
+            db.commit()
+            continue
         run.tokens_used += res.tokens
         results[f"{step['agent']}:{step['skill']}"] = res.as_dict()
         _mark(run, i, "done", started=started.isoformat(), finished=utcnow().isoformat(),
+              duration_ms=round((time.perf_counter() - t0) * 1000),
               summary=res.summary, findings=len(res.findings), proposals=res.proposals_created)
         out = dict(run.output or {})
         out["results"] = results
@@ -181,10 +208,13 @@ def _execute(db: Session, run_id: uuid.UUID) -> None:
     out["report"] = editorial_report(results)
     out["cost_note"] = "" if cost is not None else "التكلفة غير محسوبة: لم يحدد المشغل أسعار المزود."
     run.output = out
-    run.status, run.finished_at = "succeeded", utcnow()
+    failed = sum(1 for x in run.steps if x.get("status") == "failed")
+    run.status, run.finished_at = ("partial" if failed else "succeeded"), utcnow()
+    run.error = f"{failed} من {len(run.steps)} خطوة لم تكتمل — بقية النتائج محفوظة، ويمكن إعادة محاولة الفاشلة وحدها." \
+        if failed else ""
     audit.record(db, "agent_run.finish", actor_id=None, actor_type="agent", project_id=run.project_id,
                  object_type="agent_run", object_id=run.id,
-                 meta={"status": run.status, "tokens": run.tokens_used,
+                 meta={"status": run.status, "tokens": run.tokens_used, "failed_steps": failed,
                        "proposals": sum(int(x.get("proposals", 0) or 0) for x in run.steps)})
     db.commit()
 
@@ -214,6 +244,36 @@ def editorial_report(results: dict[str, Any]) -> dict[str, Any]:
                           "لا أحكام. لم يُعدَّل أي نص."}
 
 
+def retry(db: Session, run: AgentRun, user_id: uuid.UUID) -> AgentRun:
+    """Re-queue a partial/failed/cancelled run from its checkpoint: done steps are kept, the rest run again."""
+    if run.status not in RETRYABLE:
+        raise ProblemError(409, "لا يمكن إعادة المحاولة", "إعادة المحاولة متاحة للتشغيلات الفاشلة أو الجزئية أو الملغاة فقط.",
+                           "/problems/run-not-retryable")
+    project = db.get(Project, run.project_id)
+    if not project.ai_enabled:
+        raise ProblemError(409, "الوكلاء معطّلون", "عُطّلت الميزات التحليلية والتوليدية لهذا المشروع من إعداداته.",
+                           "/problems/agents-disabled")
+    if run.provider != "disabled" and get_provider().external and not has_external_consent(db, user_id, project.id):
+        raise ProblemError(403, "موافقة نقل البيانات مطلوبة", "سُحبت موافقة المشروع على النموذج الخارجي منذ التشغيل الأول.",
+                           "/problems/consent-required")
+    out = dict(run.output or {})
+    out["attempts"] = int(out.get("attempts", 1)) + 1
+    # keep what went wrong before the retry: the author sees it in the run, operators count it in /admin/agents
+    out["history"] = list(out.get("history") or []) + [
+        {"attempt": out["attempts"] - 1, "agent": x["agent"], "skill": x["skill"], "status": x["status"],
+         "error": x.get("error", ""), "duration_ms": x.get("duration_ms")}
+        for x in run.steps if x.get("status") in ("failed", "cancelled")]
+    run.output = out
+    again = [{k: v for k, v in x.items() if k in ("agent", "skill", "status")} | {"status": "pending"}
+             if x.get("status") != "done" else x for x in run.steps]
+    run.steps = again
+    run.status, run.cancel_requested, run.error, run.finished_at = "queued", False, "", None
+    audit.record(db, "agent_run.retry", actor_id=user_id, project_id=run.project_id, object_type="agent_run",
+                 object_id=run.id, meta={"attempt": out["attempts"],
+                                         "steps": sum(1 for x in again if x["status"] == "pending")})
+    return run
+
+
 def resume_pending() -> int:
     """Called at startup: re-submit runs left queued/running by a previous process."""
     db = SessionLocal()
@@ -235,7 +295,10 @@ def run_out(r: AgentRun, full: bool = True) -> dict[str, Any]:
         "idempotency_key": r.idempotency_key, "created_at": r.created_at.isoformat(),
         "started_at": r.started_at.isoformat() if r.started_at else None,
         "finished_at": r.finished_at.isoformat() if r.finished_at else None, "error": r.error[-400:] if r.error else "",
-        "cancel_requested": r.cancel_requested,
+        "cancel_requested": r.cancel_requested, "attempts": int((r.output or {}).get("attempts", 1)),
+        "progress": {"done": sum(1 for x in r.steps if x.get("status") in ("done", "skipped")),
+                     "failed": sum(1 for x in r.steps if x.get("status") == "failed"), "total": len(r.steps),
+                     "current": next((f"{x['agent']}:{x['skill']}" for x in r.steps if x.get("status") == "running"), None)},
     }
     if full:
         d["output"] = r.output

@@ -47,7 +47,8 @@ export function Severity({ level }: { level: string }) {
 }
 
 const STATUS: Record<string, [string, string]> = {
-  queued: ["info", "في الانتظار"], running: ["info", "قيد التشغيل"], succeeded: ["ok", "اكتمل"],
+  queued: ["info", "في الانتظار"], running: ["info", "قيد التشغيل"], succeeded: ["ok", "اكتمل"], partial: ["warn", "اكتمل جزئياً"],
+  skipped: ["", "مُتخطّى"],
   failed: ["bad", "فشل"], cancelled: ["", "أُلغي"], pending: ["warn", "معلق"], accepted: ["ok", "مقبول"],
   rejected: ["", "مرفوض"], stale: ["bad", "متقادم"], open: ["warn", "مفتوح"], resolved: ["ok", "محلول"],
   waived: ["info", "مُعفى"], dismissed: ["", "مستبعد"], canon: ["gold", "كانون"], draft: ["info", "مسودة"],

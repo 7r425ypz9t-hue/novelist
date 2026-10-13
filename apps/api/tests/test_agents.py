@@ -148,3 +148,68 @@ def test_disabling_agents_per_project(novel):
     r = w.run(p["id"], "A11")
     assert r.status_code == 409 and r.json()["type"] == "/problems/agents-disabled"
     assert w.write(ch["document_id"], "الكتابة مستمرة").status_code == 200
+
+
+def test_failing_skill_is_isolated_and_the_run_can_be_retried_from_its_checkpoint(novel, monkeypatch, make_writer):
+    from sqlalchemy import update
+
+    from nis.agents import skills as skills_mod
+    from nis.db import SessionLocal
+    from nis.models import User
+
+    w, p, ch = novel
+    real = skills_mod.REGISTRY["SK17"]
+    calls = {"SK03": 0}
+    real03 = skills_mod.REGISTRY["SK03"]
+
+    def boom(ctx, provider, opts):
+        raise RuntimeError("secret internal detail /srv/path")
+
+    def counted03(ctx, provider, opts):
+        calls["SK03"] += 1
+        return real03(ctx, provider, opts)
+
+    monkeypatch.setitem(skills_mod.REGISTRY, "SK17", boom)
+    monkeypatch.setitem(skills_mod.REGISTRY, "SK03", counted03)
+    run = w.run(p["id"], "A02").json()
+    assert run["status"] == "partial", run
+    st = {s["skill"]: s for s in run["steps"]}
+    assert st["SK03"]["status"] == "done" and isinstance(st["SK03"]["duration_ms"], int)
+    assert st["SK17"]["status"] == "failed" and "يمكن إعادة المحاولة" in st["SK17"]["error"]
+    assert "secret internal detail" not in str(run) and "Traceback" not in str(run)   # no internals to the author
+    assert run["progress"] == {"done": 1, "failed": 1, "total": 2, "current": None}
+    assert "1 من 2" in run["error"]
+
+    # operators see the failure per skill — counts and timings only
+    admin = make_writer("ops")
+    with SessionLocal() as db:
+        db.execute(update(User).where(User.email == admin.email).values(is_admin=True))
+        db.commit()
+    ops = admin.get("/v1/admin/agents").json()
+    sk17 = next(x for x in ops["skills"] if x["skill"] == "SK17")
+    assert sk17["failed"] >= 1 and sk17["failure_rate"] > 0
+    assert make_writer("plain").get("/v1/admin/agents").status_code in (403, 404)
+
+    monkeypatch.setitem(skills_mod.REGISTRY, "SK17", real)
+    again = w.post(f"/v1/agents/runs/{run['id']}/retry").json()
+    assert again["status"] == "succeeded" and again["attempts"] == 2 and again["error"] == ""
+    assert calls["SK03"] == 1                                           # the done step was not repeated
+    full = w.get(f"/v1/agents/runs/{run['id']}").json()
+    assert full["output"]["history"][0]["skill"] == "SK17" and full["output"]["history"][0]["status"] == "failed"
+    assert next(x for x in admin.get("/v1/admin/agents").json()["skills"] if x["skill"] == "SK17")["failed"] >= 1
+    assert w.post(f"/v1/agents/runs/{run['id']}/retry").status_code == 409   # nothing left to retry
+    assert make_writer("stranger").post(f"/v1/agents/runs/{run['id']}/retry").status_code == 404
+
+
+def test_crash_outside_a_step_reports_a_reference_not_a_traceback(novel, monkeypatch):
+    from nis.agents import orchestrator
+
+    w, p, ch = novel
+
+    def broken_report(results):
+        raise ValueError("internal")
+
+    monkeypatch.setattr(orchestrator, "editorial_report", broken_report)
+    run = w.run(p["id"], "A10").json()
+    assert run["status"] == "failed"
+    assert run["id"] in run["error"] and "Traceback" not in run["error"] and "internal" not in run["error"]

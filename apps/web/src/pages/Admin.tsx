@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "../api/client";
 import { useMe } from "../App";
-import { Card, Empty, Kpi, useToast } from "../components/ui";
+import { Card, Empty, Kpi, Status, useToast } from "../components/ui";
 import { fmt, when } from "../lib/arabic";
 
 export function AdminPage() {
@@ -12,6 +12,7 @@ export function AdminPage() {
   const metrics = useQuery<any>({ queryKey: ["admin-metrics"], queryFn: () => api("/v1/admin/metrics"), refetchInterval: 15000, enabled: !!me.data?.is_admin });
   const users = useQuery<any>({ queryKey: ["admin-users"], queryFn: () => api("/v1/admin/users"), enabled: !!me.data?.is_admin });
   const projects = useQuery<any>({ queryKey: ["admin-projects"], queryFn: () => api("/v1/admin/projects"), enabled: !!me.data?.is_admin });
+  const agentsOps = useQuery<any>({ queryKey: ["admin-agents"], queryFn: () => api("/v1/admin/agents"), refetchInterval: 15000, enabled: !!me.data?.is_admin });
   const [filter, setFilter] = useState("");
   const audit = useQuery<any>({ queryKey: ["admin-audit", filter], queryFn: () => api(`/v1/admin/audit?limit=150${filter ? `&action=${encodeURIComponent(filter)}` : ""}`), enabled: !!me.data?.is_admin });
   if (!me.data?.is_admin) return <Card><Empty title="هذه اللوحة لمسؤول النظام" /></Card>;
@@ -35,7 +36,27 @@ export function AdminPage() {
         <Kpi label="المصادر / المقاطع" value={m ? `${m.sources} / ${m.chunks}` : "…"} sub={m && `${m.flagged_chunks} مقطع مشبوه معزول`} tone={m?.flagged_chunks ? "gold" : ""} />
         <Kpi label="تشغيلات الوكلاء" value={m ? Object.values(m.runs as Record<string, number>).reduce((a, b) => a + b, 0) : "…"} sub={m && `${fmt(m.tokens_used)} رمز · ${m.pending_proposals} مقترح معلق`} />
       </div>
-      <div className="grid g2">
+      {agentsOps.data && (
+        <Card title={`تشغيل الوكلاء — آخر ${agentsOps.data.window} تشغيلاً`} icon="agents" className="" bodyClass="card-b">
+          <div className="row" style={{ flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            {Object.entries(agentsOps.data.statuses).map(([k, n]: any) => <span key={k} className="row"><Status value={k} /><span className="mono">{n}</span></span>)}
+            <span className="dim">· متوسط مدة التشغيل: <span className="mono">{agentsOps.data.avg_run_s ?? "—"} ث</span> · أُعيدت محاولته: <span className="mono">{agentsOps.data.retried}</span></span>
+          </div>
+          {agentsOps.data.stalled.length > 0 && (
+            <div className="alert warn">تشغيلات تبدو متوقفة منذ أكثر من 30 دقيقة: {agentsOps.data.stalled.map((x: any) => <span key={x.id} className="mono"> {x.agent_id}·{x.id.slice(0, 8)}</span>)} — أعد تشغيل الخادم لاستئنافها من نقاط حفظها.</div>
+          )}
+          {!agentsOps.data.skills.length ? <Empty title="لا خطوات مسجّلة بعد" /> : (
+            <table className="table"><thead><tr><th>المهارة</th><th>اكتملت</th><th>فشلت</th><th>نسبة الفشل</th><th>المتوسط</th><th>p95</th></tr></thead>
+              <tbody>{agentsOps.data.skills.map((k: any) => (
+                <tr key={k.skill}><td><span className="mono">{k.skill}</span> {k.name}</td><td className="mono">{k.done}</td>
+                  <td className="mono">{k.failed ? <span className="badge bad">{k.failed}</span> : 0}</td>
+                  <td className="mono">{Math.round(k.failure_rate * 100)}%</td>
+                  <td className="mono">{k.avg_ms ?? "—"} ms</td><td className="mono">{k.p95_ms ?? "—"} ms</td></tr>))}
+              </tbody></table>
+          )}
+        </Card>
+      )}
+      <div className="grid g2" style={{ marginTop: 16 }}>
         <Card title="المستخدمون">
           <table className="table"><thead><tr><th>المستخدم</th><th>مشاريع</th><th>الحالة</th><th /></tr></thead><tbody>
             {users.data?.items.map((u: any) => (

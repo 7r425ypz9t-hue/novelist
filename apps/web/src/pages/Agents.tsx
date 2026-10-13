@@ -63,7 +63,8 @@ export function AgentsPage() {
             <tbody>{runs.data.items.map((r) => (
               <tr key={r.id} className="clickable" onClick={() => setOpen(r.id)}>
                 <td><span className="mono">{r.agent_id}</span> {r.agent_name}</td><td className="mono dim">{r.skills.join(" ")}</td>
-                <td><Status value={r.status} /></td><td><span className="badge">{r.risk_level}</span></td>
+                <td><Status value={r.status} />{r.progress && ["queued", "running"].includes(r.status) && <span className="dim mono"> {r.progress.done}/{r.progress.total}</span>}
+                  {(r.attempts ?? 1) > 1 && <span className="badge" title="عدد المحاولات">×{r.attempts}</span>}</td><td><span className="badge">{r.risk_level}</span></td>
                 <td className="mono">{r.provider === "disabled" ? "حتمي" : r.model_id}</td><td className="mono">{r.tokens_used}</td>
                 <td className="dim">{ago(r.created_at)}</td><td><Icon name="search" size={14} /></td>
               </tr>))}
@@ -180,21 +181,37 @@ function RunModal({ runId, onClose }: { runId: string; onClose: () => void }) {
   if (!r) return null;
   const report = r.output?.report;
   const cancel = async () => { try { await api(`/v1/agents/runs/${runId}/cancel`, { method: "POST" }); q.refetch(); } catch (e) { toast.error(e); } };
+  const retry = async () => {
+    try { await api(`/v1/agents/runs/${runId}/retry`, { method: "POST" }); toast.ok("أُعيد التشغيل من آخر نقطة محفوظة — الخطوات المكتملة لن تتكرر"); q.refetch(); } catch (e) { toast.error(e); }
+  };
+  const live = ["queued", "running"].includes(r.status);
+  const pr = r.progress;
+  const secs = (ms?: number) => (ms === undefined || ms === null ? "" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} ث`);
   const proposals = r.steps.reduce((a: number, s: any) => a + (s.proposals || 0), 0);
   return (
     <Modal title={<span className="row"><span className="mono">{r.agent_id}</span> {r.agent_name} <Status value={r.status} /></span>} wide onClose={onClose}
-      footer={<>{["queued", "running"].includes(r.status) && <button className="btn danger" onClick={cancel}><Icon name="stop" size={14} /> إلغاء</button>}
+      footer={<>{live && <button className="btn danger" onClick={cancel}><Icon name="stop" size={14} /> إلغاء</button>}
+        {["partial", "failed", "cancelled"].includes(r.status) && <button className="btn" onClick={retry}><Icon name="play" size={14} /> إعادة المحاولة من نقطة التوقف</button>}
         <span style={{ flex: 1 }} />{proposals > 0 && <Link className="btn gold" to={`/p/${pid}/proposals`}>مراجعة {proposals} مقترحاً</Link>}</>}>
       <div className="row" style={{ marginBottom: 10 }}>
         <span className="badge">المخاطرة {r.risk_level}</span><span className="badge mono">{r.provider === "disabled" ? "deterministic" : r.model_id}</span>
         <span className="badge mono">tokens {r.tokens_used}</span>{r.output?.cost_note && <span className="dim">{r.output.cost_note}</span>}
       </div>
-      {r.error && <div className="alert bad">{r.error}</div>}
+      {pr && pr.total > 0 && (
+        <div className="run-progress" aria-live="polite">
+          <div className="row between"><span>{live ? (pr.current ? <>يعمل الآن: <span className="mono">{pr.current}</span></> : "في الانتظار…") : "انتهى"}</span>
+            <span className="mono">{pr.done}/{pr.total}{pr.failed ? ` · فشل ${pr.failed}` : ""}{(r.attempts ?? 1) > 1 ? ` · المحاولة ${r.attempts}` : ""}</span></div>
+          <div className="meter" role="progressbar" aria-label="تقدّم التشغيل" aria-valuenow={Math.round((pr.done / pr.total) * 100)} aria-valuemin={0} aria-valuemax={100}>
+            <span style={{ width: `${(pr.done / pr.total) * 100}%` }} /></div>
+        </div>
+      )}
+      {r.error && <div className={`alert ${r.status === "partial" ? "warn" : "bad"}`}>{r.error}</div>}
       <Tabs value={tab} onChange={setTab} items={[["steps", "الخطوات"], ["report", "التقرير التحريري"], ["metrics", "القياسات"]]} />
       {tab === "steps" && (
         <table className="table"><tbody>{r.steps.map((s: any, i: number) => (
           <tr key={i}><td className="mono">{s.agent}:{s.skill}</td><td><Status value={s.status === "done" ? "succeeded" : s.status === "pending" ? "queued" : s.status} /></td>
-            <td>{s.summary}<div className="dim">{s.note}</div></td><td className="mono">{s.findings ?? ""}</td><td className="mono">{s.proposals ? `+${s.proposals}` : ""}</td></tr>))}
+            <td>{s.summary}{s.error && <div className="bad-text">{s.error}</div>}<div className="dim">{s.note}</div></td>
+            <td className="mono">{s.findings ?? ""}</td><td className="mono">{s.proposals ? `+${s.proposals}` : ""}</td><td className="mono dim">{secs(s.duration_ms)}</td></tr>))}
         </tbody></table>
       )}
       {tab === "report" && (!report ? <Empty title="يظهر التقرير بعد اكتمال التشغيل" /> : (

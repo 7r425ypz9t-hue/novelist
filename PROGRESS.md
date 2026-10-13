@@ -25,6 +25,8 @@
 - [x] Docker verified in a real daemon: image built (apt step skipped, see open items), runs as uid 10001, compose with PostgreSQL 16 healthy, content encrypted in PostgreSQL, data survives restart, wrong key → container refuses to serve.
 - [x] Compose backups without host tools (`compose-backup.sh` with retention, `compose-verify.sh` restoring into a scratch database), daily systemd timer; tampered backup rejected.
 
+- [x] Agent operations: per-step failure isolation (rollback of the failed step only, run ends «partial»), author-safe Arabic errors (tracebacks to the server log with the run id), step durations and live progress, retry from checkpoint with attempt history, `/v1/admin/agents` per-skill failure rate / avg / p95 and stalled runs.
+
 Open items (TODO, not done):
 - [ ] Docker: the apt step (Pango/HarfBuzz for WeasyPrint) not executed here — deb.debian.org is blocked by this environment's egress policy; everything else built and ran (see below).
 - [ ] Firefox/Edge e2e configured in the CI matrix but not yet executed (only Chromium exists here); manual screen-reader review.
