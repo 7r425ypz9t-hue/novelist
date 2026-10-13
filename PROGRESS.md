@@ -27,6 +27,8 @@
 
 - [x] Agent operations: per-step failure isolation (rollback of the failed step only, run ends «partial»), author-safe Arabic errors (tracebacks to the server log with the run id), step durations and live progress, retry from checkpoint with attempt history, `/v1/admin/agents` per-skill failure rate / avg / p95 and stalled runs.
 
+- [x] «مسار الرواية» on the editorial secretariat page: eight stages (foundation → bible → writing → analysis → continuity → decisions → sources → publish) computed from live data, one recommended next step by editorial priority, role-aware actions (`GET /v1/projects/{id}/workflow`).
+
 Open items (TODO, not done):
 - [ ] Docker: the apt step (Pango/HarfBuzz for WeasyPrint) not executed here — deb.debian.org is blocked by this environment's egress policy; everything else built and ran (see below).
 - [ ] Firefox/Edge e2e configured in the CI matrix but not yet executed (only Chromium exists here); manual screen-reader review.

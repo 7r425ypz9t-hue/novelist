@@ -581,6 +581,14 @@ def import_commit(body: ImportCommitIn, acc: Access = Depends(project_access), d
 # ───────────────────────── dashboard (FR23) ─────────────────────────
 
 
+@router.get("/projects/{project_id}/workflow")
+def workflow(acc: Access = Depends(project_access), db: Session = Depends(get_db)):
+    """«مسار الرواية»: stage states from live data and the single recommended next step (role-aware)."""
+    from ..services.workflow import compute
+
+    return compute(db, acc.project, acc.perms)
+
+
 @router.get("/projects/{project_id}/dashboard")
 def dashboard(acc: Access = Depends(project_access), db: Session = Depends(get_db)):
     pid = acc.project.id

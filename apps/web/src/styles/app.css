@@ -288,6 +288,18 @@ table.table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 .run-progress { margin: 4px 0 12px; }
 .run-progress .meter { margin-top: 6px; }
 .bad-text { color: var(--bad-text, var(--bad)); font-size: var(--fs-sm); }
+/* «مسار الرواية» — stepper wraps on narrow screens; colour is never the only signal (state label below each step). */
+.path-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 6px; counter-reset: step; }
+.path-step > a, .path-step > span { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: var(--radius-sm); color: var(--text-2); text-decoration: none; text-align: center; border: 1px solid transparent; height: 100%; }
+.path-step > a:hover, .path-step > a:focus-visible { background: var(--panel-2); text-decoration: none; }
+.path-dot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--panel-3); color: var(--text-3); border: 2px solid var(--line); }
+.path-title { font-weight: 600; font-size: var(--fs-sm); color: var(--text); }
+.path-state { font-size: var(--fs-xs); color: var(--text-3); }
+.path-step.done .path-dot { background: var(--p-teal); border-color: var(--p-teal); color: #0B3B30; }
+.path-step.active .path-dot { background: color-mix(in srgb, var(--p-salmon) 40%, var(--panel)); border-color: var(--p-coral); color: var(--text); }
+.path-step.optional .path-dot { border-style: dashed; }
+.path-step.is-next > a, .path-step.is-next > span { border-color: color-mix(in srgb, var(--p-coral) 55%, transparent); background: color-mix(in srgb, var(--p-salmon) 12%, transparent); }
+.path-next { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--panel-2); border-inline-start: 3px solid var(--p-coral); }
 .motto { font-family: var(--font-text); font-size: var(--fs-h3); color: var(--text-2); margin: 2px 0 0; }
 .paper .ProseMirror { font-family: var(--font-text); font-size: var(--fs-paper); line-height: var(--paper-leading); outline: none; min-height: 50vh; text-align: justify; }
 .paper .ProseMirror p { margin: 0 0 .5em; }

@@ -11,6 +11,7 @@ export function DashboardPage() {
   const q = useQuery<any>({ queryKey: ["dashboard", pid], queryFn: () => api(`/v1/projects/${pid}/dashboard`), refetchInterval: 15000 });
   const conflicts = useQuery<any>({ queryKey: ["conflicts", pid, "open"], queryFn: () => api(`/v1/projects/${pid}/conflicts?state=open`) });
   const proposals = useQuery<any>({ queryKey: ["proposals", pid, "pending"], queryFn: () => api(`/v1/projects/${pid}/proposals?state=pending&limit=6`) });
+  const path = useQuery<any>({ queryKey: ["workflow", pid], queryFn: () => api(`/v1/projects/${pid}/workflow`), refetchInterval: 20000 });
   if (q.isLoading || !q.data) return <Loading />;
   const d = q.data;
   const oc = d.open_conflicts;
@@ -26,6 +27,8 @@ export function DashboardPage() {
         <Link className="btn primary" to={`/p/${pid}/write`}><Icon name="write" size={16} /> متابعة الكتابة</Link>
         <Link className="btn gold" to={`/p/${pid}/agents`}><Icon name="agents" size={16} /> تشغيل فحص شامل</Link>
       </div>
+
+      {path.data && <NovelPath data={path.data} />}
 
       <div className="grid g4" style={{ marginBottom: 16 }}>
         <Kpi label="الكلمات" value={fmt(d.words)} sub={d.word_goal ? `من هدف ${fmt(d.word_goal)}` : "بلا هدف محدد"} progress={d.progress} tone="gold" />
@@ -92,6 +95,54 @@ export function DashboardPage() {
           ) : <Empty title="لا مقترحات معلقة" />}
         </Card>
       </div>
+    </>
+  );
+}
+
+const STAGE_ICON: Record<string, string> = {
+  foundation: "settings", bible: "bible", writing: "write", analysis: "agents", continuity: "continuity",
+  decisions: "proposals", sources: "sources", publish: "publish",
+};
+const STATE_LABEL: Record<string, string> = { done: "منجز", active: "يحتاج انتباهاً", todo: "لم يبدأ", optional: "اختياري" };
+
+/* «مسار الرواية»: eight stages read from live data, and one recommended next step. */
+function NovelPath({ data }: { data: any }) {
+  const n = data.next;
+  return (
+    <section className="card novel-path" aria-labelledby="path-title" style={{ marginBottom: 16 }}>
+      <header className="card-h">
+        <h2 id="path-title" className="grow"><Icon name="timeline" size={16} /> مسار الرواية</h2>
+        <span className="dim mono">{data.done}/{data.total}</span>
+      </header>
+      <div className="card-b">
+        <ol className="path-steps">
+          {data.stages.map((s: any) => (
+            <li key={s.key} className={`path-step ${s.state} ${n?.key === s.key ? "is-next" : ""}`}>
+              {s.action ? <Link to={s.action.to} title={s.detail}><StepBody s={s} /></Link> : <span title={s.detail}><StepBody s={s} /></span>}
+            </li>
+          ))}
+        </ol>
+        {n ? (
+          <div className="path-next">
+            <div className="grow">
+              <div className="eyebrow">الخطوة التالية</div>
+              <strong>{n.title}: {n.detail}</strong>
+              <div className="dim">{n.why}</div>
+            </div>
+            <Link className="btn primary" to={n.action.to}><Icon name={STAGE_ICON[n.key] || "play"} size={16} /> {n.action.label}</Link>
+          </div>
+        ) : <div className="path-next"><strong className="grow">لا شيء ينتظر الآن — المسار مكتمل لهذه المرحلة.</strong></div>}
+      </div>
+    </section>
+  );
+}
+
+function StepBody({ s }: { s: any }) {
+  return (
+    <>
+      <span className="path-dot" aria-hidden="true"><Icon name={s.state === "done" ? "check" : STAGE_ICON[s.key] || "spark"} size={14} /></span>
+      <span className="path-title">{s.title}</span>
+      <span className="path-state">{STATE_LABEL[s.state]}</span>
     </>
   );
 }
