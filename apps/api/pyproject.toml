@@ -26,6 +26,8 @@ dependencies = [
 
 [project.optional-dependencies]
 postgres = ["psycopg[binary]>=3.1"]
+# HarfBuzz/Pango PDF engine (full tashkeel, real footnotes). Needs system Pango (see infra/Dockerfile).
+pdf = ["weasyprint>=62"]
 dev = ["pytest>=8", "ruff>=0.5"]
 
 [project.scripts]

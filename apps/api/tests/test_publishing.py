@@ -84,7 +84,7 @@ def test_AT16_pdf_opens_with_outline_and_arabic_font(book):
     titles = [o.title if hasattr(o, "title") else None for o in _flatten(r.outline)]
     assert "البحر" in titles and "العودة" in titles
     fonts = [f.get_object()["/BaseFont"] for f in r.pages[2]["/Resources"]["/Font"].values()]
-    assert any("NotoNaskhArabic" in f for f in fonts)  # embedded licensed Arabic font (OFL)
+    assert any("NotoNaskhArabic" in str(f).replace("-", "").replace(" ", "").replace("#20", "") for f in fonts), fonts  # OFL font
 
 
 def _flatten(items):
@@ -150,3 +150,42 @@ def test_project_deletion_requires_typed_title(book, other):
     r = w.delete(f"/v1/projects/{p['id']}", json={"confirm_title": p["title"]})
     assert r.status_code == 200 and "النسخ الاحتياطية" in r.json()["retention"]
     assert w.get(f"/v1/projects/{p['id']}").status_code == 404
+
+
+def test_pdf_engine_keeps_tashkeel_and_real_footnotes(book):
+    """With WeasyPrint installed the PDF is shaped by HarfBuzz: diacritics survive, notes are page footnotes."""
+    import pytest
+
+    pytest.importorskip("weasyprint")
+    from pypdf import PdfReader
+
+    from nis.services.exports import Book, Item
+    from nis.services.pdf_html import book_html
+
+    b = Book("عنوان", "", "مؤلف", "ar", [
+        Item("chapter", "الأول"),
+        Item("block", node={"type": "paragraph", "_fn": None, "content": [
+            {"type": "text", "text": "ذَهَبَ الوَلَدُ", "_fn": 1}]}),
+        Item("notes", notes=["حاشية الصفحة"]),
+    ])
+    h = book_html(b)
+    assert "ذَهَبَ" in h and 'class="fn"' in h and "حاشية الصفحة" in h and "target-counter" in h
+    w, p = book
+    data = _download(w, p["id"], "pdf")
+    assert "WeasyPrint" in str(PdfReader(io.BytesIO(data)).metadata.get("/Producer", ""))
+
+
+def test_reportlab_fallback_pdf_still_renders(book):
+    from pypdf import PdfReader
+
+    from nis.db import SessionLocal
+    from nis.models import Project
+    from nis.services.exports import compile_book, to_pdf_reportlab
+
+    w, p = book
+    db = SessionLocal()
+    try:
+        data = to_pdf_reportlab(compile_book(db, db.get(Project, __import__("uuid").UUID(p["id"]))))
+    finally:
+        db.close()
+    assert len(PdfReader(io.BytesIO(data)).pages) >= 4

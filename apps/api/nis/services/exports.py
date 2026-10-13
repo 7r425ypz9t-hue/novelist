@@ -333,6 +333,17 @@ def _wrap(text: str, font: str, size: float, width: float) -> list[str]:
 
 
 def to_pdf(book: Book) -> bytes:
+    """Prefer the HarfBuzz/Pango engine (full tashkeel, real footnotes); fall back to ReportLab."""
+    try:
+        import weasyprint  # noqa: F401
+    except (ImportError, OSError):
+        return to_pdf_reportlab(book)
+    from .pdf_html import to_pdf_html
+
+    return to_pdf_html(book)
+
+
+def to_pdf_reportlab(book: Book) -> bytes:
     from reportlab.lib.pagesizes import A5
     from reportlab.lib.units import mm
     from reportlab.pdfbase.pdfmetrics import stringWidth

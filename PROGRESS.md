@@ -13,12 +13,13 @@
 - [x] Demo and test fixtures use neutral original names only.
 - [x] Continuity golden set (20 planted errors + 20 clean cases, original text): precision 1.00, recall 1.00 — author-built, so optimistic.
 - [x] Hijri calendar for story time (tabular conversion, author wording kept in the label).
+- [x] HarfBuzz/Pango PDF (WeasyPrint): full tashkeel, page footnotes, TOC page numbers, bookmarks; ReportLab fallback kept and tested.
 - [x] Encryption at rest (AES-256-GCM, server key) for manuscript, revisions, source chunks, comments; `nis encrypt-existing` for legacy rows.
 
 Open items (TODO, not done):
 - [ ] Docker image build not executed in this environment (no Docker daemon); compose file is untested.
 - [ ] Cross-browser RTL e2e (Firefox, Edge); manual screen-reader review (automated axe audit passes).
-- [ ] Per-project keys derived from an author secret (operator-blind); fictional-world calendars; HarfBuzz-based PDF with full tashkeel.
+- [ ] Per-project keys derived from an author secret (operator-blind); fictional-world calendars.
 - [ ] Embedding-based hybrid retrieval after a recall benchmark; continuity benchmark on third-party licensed chapters.
 - [ ] Human editorial calibration for AT19 and NLQI inter-rater agreement.
 - [ ] Live call against a real model provider (adapter implemented, consent flow tested, no network call made).

@@ -26,7 +26,7 @@
 | FR17 | Diff بمبرر وقبول/رفض/تعديل | `services/proposals.py`, `pages/Proposals.tsx` | `api/test_agents.py::test_lint_patches_*`, e2e AT06 | ✅ |
 | FR18 | بصمة على عينات مملوكة، قابلة للمحو، لا تقليد | `services/style.py`, `routers/insight.py` | `api/test_insight.py` | ✅ |
 | FR19 | سجل لكل تشغيل: السبب، النموذج، التكلفة، المصادر، دون نص خام | `models.AgentRun`, `audit.py` (تنقيح) | `api/test_security.py::test_audit_log_never_stores_manuscript_text` | ✅ (التكلفة تُحسب فقط إن حدّد المشغّل الأسعار) |
-| FR20 | DOCX/PDF/EPUB بفهرس وعربية سليمة | `services/exports.py` | `api/test_publishing.py::test_AT16_*` + فتح يدوي في LibreOffice | ✅ |
+| FR20 | DOCX/PDF/EPUB بفهرس وعربية سليمة | `services/exports.py`, `services/pdf_html.py` (HarfBuzz: تشكيل كامل وحواشٍ سفلية) | `api/test_publishing.py::test_AT16_*` + فتح يدوي في LibreOffice | ✅ |
 | FR21 | استيراد DOCX/MD/TXT مع معاينة | `/import/preview`, `/import/commit`, `Write.tsx::ImportModal` (معاينة وتحرير العناوين قبل الاعتماد) | `api/test_manuscript.py::test_import_preview_and_commit` | ✅ |
 | FR22 | ربط كل دعوى بمصدر أو «غير متحقق» | `models.Citation`, SK13 | `api/test_research.py::test_AT10_*`, `test_AT13_*` | ✅ |
 | FR23 | لوحة العمل | `/dashboard`, `pages/Dashboard.tsx` | `api/test_manuscript.py::test_import_*` + لقطات | ✅ |
