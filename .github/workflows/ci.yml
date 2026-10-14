@@ -58,15 +58,18 @@ jobs:
         shell: powershell
         run: |
           .\scripts\start.ps1 -CreateShortcut
-          $sh = New-Object -ComObject WScript.Shell
+          # read back with Shell.Application (Unicode-safe; WScript.Shell cannot open Arabic file names)
+          $app = New-Object -ComObject Shell.Application
           foreach ($f in @([Environment]::GetFolderPath("Desktop"), [Environment]::GetFolderPath("Programs"))) {
-            $lnk = @(Get-ChildItem $f -Filter *.lnk | Where-Object { $sh.CreateShortcut($_.FullName).TargetPath -like "*\Kateb.cmd" })
-            if (-not $lnk) { throw "no Kateb shortcut in $f" }
-            if ($lnk[0].Name -match '\?' -or $lnk[0].Name -like 'kateb-*') { throw "shortcut name not Arabic: $($lnk[0].Name)" }
+            $links = @($app.Namespace($f).Items() | Where-Object { $_.IsLink -and $_.GetLink.Path -like "*\Kateb.cmd" })
+            if (-not $links) { throw "no Kateb shortcut in $f" }
+            $l = $links[0]
+            if ($l.Path -match '\?' -or $l.Name -like 'kateb-*' -or $l.Path -notmatch '[^\x00-\x7F]') { throw "shortcut name not Arabic: $($l.Path)" }
             if (@(Get-ChildItem $f -Filter 'kateb-*.lnk').Count) { throw "temporary shortcut left in $f" }
-            $s = $sh.CreateShortcut($lnk[0].FullName)
-            if (-not (Test-Path ($s.IconLocation -replace ",0$", ""))) { throw "icon missing: $($s.IconLocation)" }
-            Write-Host "OK $($lnk[0].Name) -> $($s.TargetPath) [$($s.IconLocation)]"
+            $raw = [System.Text.Encoding]::Unicode.GetString([System.IO.File]::ReadAllBytes($l.Path))
+            if ($raw -notmatch 'kateb\.ico') { throw "icon not set on $($l.Path)" }
+            if (-not (Test-Path "infra\windows\kateb.ico")) { throw "icon file missing" }
+            Write-Host "OK $($l.Path) -> $($l.GetLink.Path) (working dir $($l.GetLink.WorkingDirectory))"
           }
 
   web:
