@@ -54,7 +54,8 @@ def reset_engine() -> None:
 
 def SessionLocal() -> Session:  # noqa: N802 - factory name kept familiar
     get_engine()
-    assert _SessionLocal is not None
+    if _SessionLocal is None:  # explicit, not `assert`: survives python -O
+        raise RuntimeError("database session factory was not initialised")
     return _SessionLocal()
 
 

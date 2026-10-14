@@ -89,7 +89,8 @@ class ToolContext:
     @cached_property
     def project(self) -> Project:
         p = self._db.get(Project, self.project_id)
-        assert p is not None
+        if p is None:  # explicit, not `assert`: survives python -O
+            raise LookupError(f"project {self.project_id} not found for agent context")
         return p
 
     @cached_property
