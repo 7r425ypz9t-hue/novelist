@@ -9,9 +9,12 @@
     -Lan          يجعله متاحاً لأجهزتك الأخرى في الشبكة (يتطلب وجود حسابك، ويغلق التسجيل)
     -Port 8080    منفذ آخر
     -NoBrowser    لا يفتح المتصفح تلقائياً
+    -CreateShortcut  يضع أيقونة «كاتب» على سطح المكتب وفي قائمة ابدأ (تُنشأ تلقائياً في أول تشغيل)
+    -NoShortcut   لا ينشئ الأيقونة تلقائياً
     -SmokeTest    فحص كامل آلي ثم إيقاف (للتكامل المستمر): تثبيت، تشغيل، حساب، رواية، نص، تصدير Word وPDF
 #>
-param([switch]$Lan, [switch]$NoBrowser, [switch]$SmokeTest, [int]$Port = 8000)
+param([switch]$Lan, [switch]$NoBrowser, [switch]$SmokeTest, [switch]$CreateShortcut, [switch]$NoShortcut,
+      [int]$Port = 8000)
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version 2.0
@@ -23,6 +26,48 @@ Set-Location $Root
 
 function Say([string]$msg, [string]$color = "Gray") { Write-Host $msg -ForegroundColor $color }
 function Fail([string]$msg) { Say $msg "Red"; exit 1 }
+
+# ── أيقونة سطح المكتب وقائمة ابدأ ──────────────────────────────────
+function New-KatebShortcut([string]$Name, [string]$Launcher, [string]$Description) {
+  $icon = Join-Path $Root "infra\windows\kateb.ico"
+  $made = @()
+  foreach ($folder in @([Environment]::GetFolderPath("Desktop"), [Environment]::GetFolderPath("Programs"))) {
+    if (-not $folder) { continue }
+    $lnk = Join-Path $folder "$Name.lnk"
+    $shell = New-Object -ComObject WScript.Shell
+    $s = $shell.CreateShortcut($lnk)
+    $s.TargetPath = Join-Path $Root $Launcher
+    $s.WorkingDirectory = $Root
+    $s.IconLocation = "$icon,0"
+    $s.Description = $Description
+    $s.WindowStyle = 1
+    $s.Save()
+    $made += $lnk
+  }
+  return $made
+}
+function New-KatebShortcuts {
+  New-KatebShortcut "كاتب" "Kateb.cmd" "كاتب — استديو الرواية" | Out-Null
+  New-KatebShortcut "كاتب — عدة أجهزة" "Kateb-multi-device.cmd" "كاتب لحواسيبك الأخرى في الشبكة" | Out-Null
+}
+
+if ($CreateShortcut) {
+  New-KatebShortcuts
+  Say "أُضيفت أيقونة «كاتب» إلى سطح المكتب وقائمة ابدأ." "Green"
+  exit 0
+}
+
+# Already running (a second click on the icon): just open it instead of starting a second copy.
+if (-not $SmokeTest -and -not $Lan) {
+  try {
+    $alive = Invoke-RestMethod "http://127.0.0.1:$Port/v1/health" -TimeoutSec 2
+    if ($alive.status -eq "ok") {
+      Say "«كاتب» يعمل بالفعل على http://127.0.0.1:$Port" "Green"
+      if (-not $NoBrowser) { Start-Process "http://127.0.0.1:$Port" }
+      exit 0
+    }
+  } catch { }
+}
 
 # ── Python (3.11 أو أحدث) ───────────────────────────────────────────
 function Find-Python {
@@ -162,11 +207,21 @@ if ($SmokeTest) {
     $panelPage = Invoke-WebRequest "$url/" -UseBasicParsing
     if ($panelPage.StatusCode -ne 200) { Fail "SMOKE: لوحة التحكم لا تُخدم." }
     & $vpy -m nis.cli verify-data; if ($LASTEXITCODE) { Fail "SMOKE: verify-data فشل." }
+    # a second click on the icon while it runs must return at once, without starting another server
+    $t0 = Get-Date
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -Port $Port -NoBrowser | Out-Null
+    if ($LASTEXITCODE -ne 0 -or ((Get-Date) - $t0).TotalSeconds -gt 30) { Fail "SMOKE: النقرة الثانية لم تتعرّف على التطبيق العامل." }
+    Say "SMOKE: النقرة الثانية فتحت التطبيق العامل دون تشغيل نسخة أخرى." "Green"
     Say "SMOKE: نجح التشغيل الكامل على Windows." "Green"
   } finally {
     if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
   }
   exit 0
+}
+
+if (-not $NoShortcut -and -not (Test-Path (Join-Path ([Environment]::GetFolderPath("Desktop")) "كاتب.lnk"))) {
+  try { New-KatebShortcuts; Say "أُضيفت أيقونة «كاتب» إلى سطح المكتب وقائمة ابدأ؛ من الآن يكفي النقر عليها." "Green" }
+  catch { Say "تعذّر إنشاء أيقونة سطح المكتب ($($_.Exception.Message)) — يمكن تشغيل Kateb.cmd مباشرة." "Yellow" }
 }
 
 if (-not $NoBrowser) {

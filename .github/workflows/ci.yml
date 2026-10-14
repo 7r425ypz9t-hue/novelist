@@ -54,6 +54,18 @@ jobs:
       - name: launcher smoke test (Windows PowerShell 5.1)
         shell: powershell
         run: .\scripts\start.ps1 -SmokeTest -Port 8765
+      - name: desktop and Start-menu icons
+        shell: powershell
+        run: |
+          .\scripts\start.ps1 -CreateShortcut
+          $sh = New-Object -ComObject WScript.Shell
+          foreach ($f in @([Environment]::GetFolderPath("Desktop"), [Environment]::GetFolderPath("Programs"))) {
+            $lnk = @(Get-ChildItem $f -Filter *.lnk | Where-Object { $sh.CreateShortcut($_.FullName).TargetPath -like "*\Kateb.cmd" })
+            if (-not $lnk) { throw "no Kateb shortcut in $f" }
+            $s = $sh.CreateShortcut($lnk[0].FullName)
+            if (-not (Test-Path ($s.IconLocation -replace ",0$", ""))) { throw "icon missing: $($s.IconLocation)" }
+            Write-Host "OK $($lnk[0].Name) -> $($s.TargetPath) [$($s.IconLocation)]"
+          }
 
   web:
     runs-on: ubuntu-latest
