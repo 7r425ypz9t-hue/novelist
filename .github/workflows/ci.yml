@@ -75,6 +75,33 @@ jobs:
             Write-Host "OK $($l.Path) -> $($l.GetLink.Path) (working dir $($l.GetLink.WorkingDirectory))"
           }
 
+      - name: icons appear on the writer's real path (normal start, and start while already running)
+        shell: powershell
+        run: |
+          $app = New-Object -ComObject Shell.Application
+          $folders = @([Environment]::GetFolderPath("Desktop"), [Environment]::GetFolderPath("Programs"))
+          function Kateb-Links { foreach ($f in $folders) { $app.Namespace($f).Items() | Where-Object { $_.IsLink -and $_.GetLink.Path -like "*\Kateb*.cmd" } } }
+          function Reset-Icons { Kateb-Links | ForEach-Object { Remove-Item -LiteralPath $_.Path -Force }; Remove-Item "$env:LOCALAPPDATA\Kateb\shortcuts.txt" -ErrorAction SilentlyContinue }
+          function Assert-Icons([string]$when) {
+            foreach ($f in $folders) {
+              $l = @($app.Namespace($f).Items() | Where-Object { $_.IsLink -and $_.GetLink.Path -like "*\Kateb.cmd" })
+              if (-not $l) { throw "[$when] no Kateb icon in $f" }
+              Write-Host "[$when] OK $($l[0].Path)"
+            }
+          }
+          # 1) the normal double-click path: Kateb.cmd starts the app and leaves it running
+          Reset-Icons
+          $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "Kateb.cmd -NoBrowser -Port 8766" -PassThru -WindowStyle Hidden
+          $up = $false
+          for ($i = 0; $i -lt 180 -and -not $up; $i++) { try { Invoke-RestMethod "http://127.0.0.1:8766/v1/health" -TimeoutSec 2 | Out-Null; $up = $true } catch { Start-Sleep 1 } }
+          if (-not $up) { throw "Kateb.cmd did not start the app" }
+          Assert-Icons "normal start"
+          # 2) icons removed while the app is running: a second Kateb.cmd must restore them and exit
+          Reset-Icons
+          cmd.exe /c "Kateb.cmd -NoBrowser -Port 8766"
+          if ($LASTEXITCODE -ne 0) { throw "second start failed ($LASTEXITCODE)" }
+          Assert-Icons "already running"
+          Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*nis.cli serve*8766*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
   web:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: apps/web } }

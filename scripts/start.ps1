@@ -57,9 +57,31 @@ function New-KatebShortcuts {
 }
 
 if ($CreateShortcut) {
-  New-KatebShortcuts
-  Say "أُضيفت أيقونة «كاتب» إلى سطح المكتب وقائمة ابدأ." "Green"
+  try { New-KatebShortcuts }
+  catch { Fail "تعذّر إنشاء الأيقونة: $($_.Exception.Message)" }
+  Say "أُضيفت أيقونة «كاتب» إلى سطح المكتب وقائمة ابدأ:" "Green"
+  Say "   $([Environment]::GetFolderPath('Desktop'))" "Green"
+  Say "   $([Environment]::GetFolderPath('Programs'))" "Green"
   exit 0
+}
+
+# First thing on every normal start, before anything that could stop the run (installs, build, «already
+# running»): make sure the icons exist for THIS folder. A marker remembers it was done, so an icon the writer
+# deletes on purpose is not forced back; moving the project folder re-creates them pointing at the new place.
+if (-not $NoShortcut -and -not $SmokeTest) {
+  $marker = Join-Path $env:LOCALAPPDATA "Kateb\shortcuts.txt"
+  $doneFor = if (Test-Path -LiteralPath $marker) { "$(Get-Content -LiteralPath $marker -Raw -Encoding UTF8)".Trim() } else { "" }
+  if ($doneFor -ne $Root) {
+    try {
+      New-KatebShortcuts
+      New-Item -ItemType Directory -Force -Path (Split-Path -Parent $marker) | Out-Null
+      Set-Content -LiteralPath $marker -Value $Root -Encoding UTF8
+      Say "أُضيفت أيقونة «كاتب» إلى سطح المكتب وقائمة ابدأ؛ من الآن يكفي النقر عليها." "Green"
+    } catch {
+      Say "تعذّر إنشاء أيقونة سطح المكتب: $($_.Exception.Message)" "Yellow"
+      Say "يمكن المحاولة وحدها بالنقر على Create-Kateb-Icon.cmd، أو تشغيل Kateb.cmd مباشرة." "Yellow"
+    }
+  }
 }
 
 # Already running (a second click on the icon): just open it instead of starting a second copy.
@@ -222,11 +244,6 @@ if ($SmokeTest) {
     if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
   }
   exit 0
-}
-
-if (-not $NoShortcut -and -not (Test-Path (Join-Path ([Environment]::GetFolderPath("Desktop")) "كاتب.lnk"))) {
-  try { New-KatebShortcuts; Say "أُضيفت أيقونة «كاتب» إلى سطح المكتب وقائمة ابدأ؛ من الآن يكفي النقر عليها." "Green" }
-  catch { Say "تعذّر إنشاء أيقونة سطح المكتب ($($_.Exception.Message)) — يمكن تشغيل Kateb.cmd مباشرة." "Yellow" }
 }
 
 if (-not $NoBrowser) {
