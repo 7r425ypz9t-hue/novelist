@@ -33,9 +33,11 @@
 
 - [x] Multi-device: `scripts/start.sh --lan` (refuses without an account, closes registration, prints addresses; doctor fails on open registration), «أجهزتي» (list/revoke sessions, sign out everywhere else; migration 0004), doctor blocks a SQLite database inside a sync folder, stable project identity across computers and `POST /projects/{id}/data-merge` (append-only history, fast-forward text, diverged versions kept in history; idempotent; other novels refused).
 
+- [x] Windows: double-click launcher (`Kateb.cmd`), verified on a real Windows runner in CI (backend tests + full launcher run under Windows PowerShell 5.1: account, novel, text, DOCX/PDF/EPUB, verify-data). CI fully green for the first time (security lint fixed; a unit-switch typing race found by CI and fixed).
+
 Open items (TODO, not done):
 - [ ] Docker: the apt step (Pango/HarfBuzz for WeasyPrint) not executed here — deb.debian.org is blocked by this environment's egress policy; everything else built and ran (see below).
-- [ ] Firefox/Edge e2e configured in the CI matrix but not yet executed (only Chromium exists here); manual screen-reader review.
+- [ ] Manual screen-reader review (Firefox/Edge e2e now executed and green in CI, run 21).
 - [ ] Embedding-based retrieval (deferred by the owner until infrastructure allows); continuity benchmark on third-party licensed chapters.
 - [ ] Human editorial calibration for AT19 and NLQI inter-rater agreement.
 - [ ] Successful live model call: needs an operator key (none in this environment). Verified so far: the real network path to api.anthropic.com up to authentication (HTTP 401 with a deliberately invalid key, mapped to an Arabic message); full wire-format runs against a local Anthropic/OpenAI-compatible stand-in, including external-destination gating. Hugging Face and GitHub releases are blocked here, so no local model could be installed.
