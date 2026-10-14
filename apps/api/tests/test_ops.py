@@ -75,3 +75,55 @@ def test_create_admin_reads_password_from_stdin(monkeypatch, client):
     assert r.status_code == 200
     monkeypatch.setattr("sys.stdin", io.StringIO("short\n"))
     assert main(["create-admin", f"x{email}", "--password-stdin"]) == 2
+
+
+def test_doctor_flags_a_database_inside_a_sync_folder(monkeypatch, tmp_path):
+    from nis.config import get_settings
+    from nis.ops import WARN, _check_sync_folder
+
+    box = tmp_path / "Dropbox" / "Kateb"
+    monkeypatch.setenv("NIS_DATABASE_URL", f"sqlite:///{box / 'nis.db'}")
+    monkeypatch.setenv("NIS_DATA_DIR", str(box / "data"))
+    get_settings.cache_clear()
+    try:
+        c = _check_sync_folder()
+        assert c.status == FAIL and "Dropbox" in c.detail and "--lan" in c.detail
+        monkeypatch.setenv("NIS_DATABASE_URL", f"sqlite:///{tmp_path / 'safe' / 'nis.db'}")
+        get_settings.cache_clear()
+        assert _check_sync_folder().status == WARN            # only the data folder is synced
+        monkeypatch.setenv("NIS_DATA_DIR", str(tmp_path / "safe" / "data"))
+        get_settings.cache_clear()
+        assert _check_sync_folder().status == OK
+    finally:
+        monkeypatch.undo()
+        get_settings.cache_clear()
+
+
+def test_network_mode_requires_closed_registration(monkeypatch):
+    from nis.config import get_settings
+    from nis.ops import _check_network_mode
+
+    assert _check_network_mode() is None                      # not in multi-device mode
+    monkeypatch.setenv("KATEB_LAN", "1")
+    monkeypatch.setenv("NIS_ALLOW_REGISTRATION", "true")
+    get_settings.cache_clear()
+    try:
+        assert _check_network_mode().status == FAIL
+        monkeypatch.setenv("NIS_ALLOW_REGISTRATION", "false")
+        get_settings.cache_clear()
+        assert _check_network_mode().status == OK
+    finally:
+        monkeypatch.undo()
+        get_settings.cache_clear()
+
+
+def test_sync_folder_detection_matches_folder_names_not_substrings():
+    from pathlib import Path
+
+    from nis.ops import _in_sync_folder
+
+    assert _in_sync_folder(Path("/Users/m/Dropbox (Personal)/kateb/nis.db")) == "Dropbox"
+    assert _in_sync_folder(Path("/Users/m/OneDrive - Studio/nis.db")) == "OneDrive"
+    assert _in_sync_folder(Path("/Users/m/Library/Mobile Documents/com~apple~CloudDocs/nis.db")) == "Mobile Documents"
+    assert _in_sync_folder(Path("/home/megan/novels/nis.db")) is None
+    assert _in_sync_folder(Path("/home/m/boxing/nis.db")) is None

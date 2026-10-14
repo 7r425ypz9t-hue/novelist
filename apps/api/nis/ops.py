@@ -186,12 +186,58 @@ def _check_backups() -> Check:
                  f"آخر نسخة {newest.name} قبل {age_h:.0f} ساعة — " + ("تحقّق استرجاعها" if verified else "لم يُتحقّق استرجاعها بعد"))
 
 
+# Folders kept in step by file-sync clients. A live SQLite database (plus its -wal/-shm files) copied mid-write by
+# such a client can be corrupted or forked into "conflicted copy" files; the safe multi-device setup is one server.
+SYNC_MARKERS = ("Dropbox", "iCloud", "Mobile Documents", "CloudStorage", "OneDrive", "Google Drive", "GoogleDrive",
+                "My Drive", "Syncthing", "pCloud", "MEGA", "Nextcloud", "ownCloud", "Box Sync", "Yandex.Disk")
+
+
+def _in_sync_folder(path: Path) -> str | None:
+    """The sync client whose folder contains `path`: a path segment equal to its folder name, or that name followed
+    by a separator («Dropbox (Personal)», «OneDrive - Company», «GoogleDrive-me@x»). «Megan» is not «MEGA»."""
+    parts = [p.lower() for p in path.resolve().parts]
+    for m in SYNC_MARKERS:
+        ml = m.lower()
+        if any(part == ml or part.startswith((ml + " ", ml + "-", ml + "(", ml + "_")) for part in parts):
+            return m
+    return None
+
+
+def _check_sync_folder() -> Check:
+    from .config import get_settings
+
+    s = get_settings()
+    places = [("مجلد البيانات", Path(s.data_dir))]
+    if s.is_sqlite and s.database_url.startswith("sqlite:///") and ":memory:" not in s.database_url:
+        places.insert(0, ("قاعدة البيانات", Path(s.database_url.split("///", 1)[1])))
+    hits = [(label, m) for label, p in places if (m := _in_sync_folder(p))]
+    if not hits:
+        return Check("sync_folder", OK, "مجلد مزامنة", "البيانات خارج مجلدات المزامنة")
+    what = "، ".join(f"{label} داخل {m}" for label, m in hits)
+    return Check("sync_folder", FAIL if any(lbl == "قاعدة البيانات" for lbl, _ in hits) else WARN, "مجلد مزامنة",
+                 f"{what} — قد تتلف القاعدة أو تتشعّب نسخها إذا زامنتها الخدمة أثناء الكتابة. انقلها خارجه "
+                 "(KATEB_HOME)، وللعمل من عدة أجهزة استعمل خادماً واحداً (scripts/start.sh --lan)")
+
+
+def _check_network_mode() -> Check | None:
+    from .config import get_settings
+
+    if os.environ.get("KATEB_LAN") != "1":
+        return None
+    if get_settings().allow_registration:
+        return Check("lan", FAIL, "الوصول من أجهزة أخرى", "التسجيل مفتوح والتطبيق مكشوف للشبكة — أي جهاز فيها يستطيع إنشاء حساب")
+    return Check("lan", OK, "الوصول من أجهزة أخرى", "مفعّل والتسجيل مغلق؛ استعمله في شبكة موثوقة أو عبر شبكة خاصة مشفّرة")
+
+
 def doctor() -> list[Check]:
     checks = [_check_python()]
     db = _check_database()
     checks += db
     reachable = db[0].status != FAIL
     checks += _check_storage()
+    checks.append(_check_sync_folder())
+    if (lan := _check_network_mode()) is not None:
+        checks.append(lan)
     if reachable:
         checks.append(_check_encryption())
     checks.append(_check_panel())

@@ -5,7 +5,7 @@ import { api, download } from "../api/client";
 import { roleLabel, useProject } from "../App";
 import type { CalendarDef } from "../components/HijriPicker";
 import { Card, Empty, Field, Status, useToast } from "../components/ui";
-import { when } from "../lib/arabic";
+import { ago, when } from "../lib/arabic";
 
 export function SettingsPage() {
   const { pid } = useParams();
@@ -103,8 +103,9 @@ export function SettingsPage() {
           <div className="grid g2">
             <div className="stack">
               <strong>تصدير كامل البيانات</strong>
-              <div className="dim">أرشيف ZIP مقروء: المخطوط، كل المراجعات، الكتاب المرجعي، المصادر الأصلية، الاستشهادات، المقترحات — مع بصمات SHA-256. يمكن استعادته في أي نسخة من «كاتب».</div>
+              <div className="dim">أرشيف ZIP مقروء: المخطوط، كل المراجعات، الكتاب المرجعي، المصادر الأصلية، الاستشهادات، المقترحات — مع بصمات SHA-256. يمكن استعادته في أي نسخة من «كاتب»، وتبقى الرواية الرواية نفسها على الجهاز الآخر.</div>
               <button className="btn" disabled={!owner} onClick={() => download(`/v1/projects/${pid}/data-export`, "POST").catch(toast.error)}>تنزيل الأرشيف</button>
+              <MergeFromOtherComputer pid={pid!} disabled={!owner} />
             </div>
             <div className="stack">
               <strong style={{ color: "var(--bad)" }}>حذف المشروع نهائياً</strong>
@@ -115,6 +116,7 @@ export function SettingsPage() {
             </div>
           </div>
         </Card>
+        <MyDevices />
         <Card title="الموافقات المسجلة" className="span2">
           {!consents.data?.items.length ? <Empty title="لا موافقات" /> : (
             <table className="table"><tbody>{consents.data.items.map((c: any) => (
@@ -167,5 +169,83 @@ function WorldCalendars({ pid, canEdit }: { pid: string; canEdit: boolean }) {
         </div>
       )}
     </Card>
+  );
+}
+
+/* «أجهزتي»: every device signed in to this account, and a way to sign any of them out (lost laptop, shared PC). */
+function MyDevices() {
+  const toast = useToast();
+  const q = useQuery<{ items: { id: string; device: string; current: boolean; created_at: string; last_seen_at: string }[] }>({
+    queryKey: ["sessions"], queryFn: () => api("/v1/auth/sessions"), refetchInterval: 60000,
+  });
+  const out = async (id: string, device: string) => {
+    if (!confirm(`تسجيل خروج «${device}»؟ سيحتاج ذلك الجهاز إلى الدخول من جديد.`)) return;
+    try { await api(`/v1/auth/sessions/${id}`, { method: "DELETE" }); toast.ok("سُجّل خروج الجهاز"); q.refetch(); } catch (e) { toast.error(e); }
+  };
+  const others = async () => {
+    if (!confirm("تسجيل خروج كل الأجهزة الأخرى؟ يبقى هذا الجهاز وحده متصلاً.")) return;
+    try { const r = await api<{ revoked: number }>("/v1/auth/sessions/revoke-others", { method: "POST" }); toast.ok(`سُجّل خروج ${r.revoked} من الأجهزة الأخرى`); q.refetch(); } catch (e) { toast.error(e); }
+  };
+  const items = q.data?.items || [];
+  return (
+    <Card title="أجهزتي" icon="shield" className="span2"
+      actions={items.length > 1 ? <button className="btn sm danger" onClick={others}>خروج من كل الأجهزة الأخرى</button> : undefined}>
+      <div className="dim" style={{ marginBottom: 8 }}>الأجهزة المسجَّل دخولها إلى حسابك الآن. إن رأيت جهازاً لا تعرفه أو فقدت حاسوباً، سجّل خروجه ثم غيّر كلمة المرور.</div>
+      {!items.length ? <Empty title="لا أجهزة" /> : (
+        <table className="table"><thead><tr><th>الجهاز</th><th>آخر نشاط</th><th>منذ</th><th /></tr></thead>
+          <tbody>{items.map((d) => (
+            <tr key={d.id}><td>{d.device} {d.current && <span className="badge ok">هذا الجهاز</span>}</td>
+              <td className="dim">{ago(d.last_seen_at)}</td><td className="dim">{when(d.created_at)}</td>
+              <td>{!d.current && <button className="btn sm" onClick={() => out(d.id, d.device)}>تسجيل الخروج</button>}</td></tr>))}
+          </tbody></table>
+      )}
+    </Card>
+  );
+}
+
+/* Bring in what was written on the writer's other computer — never overwriting anything here. */
+function MergeFromOtherComputer({ pid, disabled }: { pid: string; disabled: boolean }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const nav = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [report, setReport] = useState<any>(null);
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await api(`/v1/projects/${pid}/data-merge`, { form: fd });
+      setReport(r);
+      ["tree", "dashboard", "workflow", "characters", "places", "sources"].forEach((k) => qc.invalidateQueries({ queryKey: [k, pid] }));
+      toast.ok("دُمج الأرشيف — لم يُكتب فوق شيء");
+    } catch (e) { toast.error(e); } finally { setBusy(false); }
+  };
+  const d = report?.documents;
+  const total = (o: Record<string, number> | undefined) => Object.values(o || {}).reduce((a, b) => a + b, 0);
+  return (
+    <>
+      <div className="dim" style={{ marginTop: 6 }}>كتبتَ على جهاز آخر؟ نزّل أرشيف هذا المشروع من هناك ثم أدخله هنا: تُضاف الفصول والمراجعات الجديدة، ويتقدّم النص إن كان امتداداً لما هنا؛ وإن اختلفت النسختان بقي نصّك هنا وحُفظت الأخرى في المراجعات لتقارن وتختار.</div>
+      <label className={`btn ${disabled || busy ? "disabled" : ""}`} style={{ alignSelf: "flex-start" }}>
+        <input type="file" accept=".zip,application/zip" hidden disabled={disabled || busy} onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
+        {busy ? "جارٍ الدمج…" : "تحديث من جهاز آخر"}
+      </label>
+      {report && (
+        <div className="stack" style={{ gap: 6 }} aria-live="polite">
+          <div className="alert ok">
+            تقدّم نص {d.fast_forward.length} وحدة · وحدات جديدة {d.new.length} · سجلات مضافة {total(report.added)} · محدَّثة {total(report.updated)}
+            {report.exported_at && <span className="dim"> · الأرشيف من {when(report.exported_at)}</span>}
+          </div>
+          {d.diverged.length > 0 && (
+            <div className="alert warn">
+              <strong>نسختان مختلفتان ({d.diverged.length}):</strong> بقي نصك هنا كما هو، وحُفظت نسخة الجهاز الآخر في «المراجعات» بعنوان «من جهاز آخر». قارن ثم استرجع ما تختار:
+              <div className="pill-list" style={{ marginTop: 6 }}>{d.diverged.map((x: any) => (
+                <button key={x.node_id} className="btn sm" onClick={() => nav(`/p/${pid}/write/${x.node_id}`)}>{x.title}</button>))}</div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }

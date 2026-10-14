@@ -6,7 +6,7 @@ non-members so that object existence never leaks across projects (NFR05, AT12).
 
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import Depends, Header
@@ -29,6 +29,9 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
 }
 
 
+SEEN_EVERY = timedelta(minutes=5)
+
+
 def current_user(
     authorization: str | None = Header(default=None), db: Session = Depends(get_db)
 ) -> User:
@@ -42,6 +45,10 @@ def current_user(
     user = db.get(User, sess.user_id)
     if not user or not user.is_active:
         raise ProblemError(401, "غير مصادق", "الحساب غير نشط.", "/problems/unauthenticated")
+    # «أجهزتي»: when this device was last active — written at most every 5 minutes, before any endpoint work
+    if sess.last_seen_at is None or now - _aware(sess.last_seen_at) > SEEN_EVERY:
+        sess.last_seen_at = now
+        db.commit()
     return user
 
 

@@ -31,6 +31,8 @@
 
 - [x] Provider path: bounded retries with backoff and Retry-After, fast Arabic failures for 401/403/404/4xx, no built-in model name, configurable Anthropic base URL (gateways), per-run input/output token metering and exact cost when prices are set, `nis provider-check [--send-test-prompt]` (fixed prompt, never manuscript text).
 
+- [x] Multi-device: `scripts/start.sh --lan` (refuses without an account, closes registration, prints addresses; doctor fails on open registration), «أجهزتي» (list/revoke sessions, sign out everywhere else; migration 0004), doctor blocks a SQLite database inside a sync folder, stable project identity across computers and `POST /projects/{id}/data-merge` (append-only history, fast-forward text, diverged versions kept in history; idempotent; other novels refused).
+
 Open items (TODO, not done):
 - [ ] Docker: the apt step (Pango/HarfBuzz for WeasyPrint) not executed here — deb.debian.org is blocked by this environment's egress policy; everything else built and ran (see below).
 - [ ] Firefox/Edge e2e configured in the CI matrix but not yet executed (only Chromium exists here); manual screen-reader review.

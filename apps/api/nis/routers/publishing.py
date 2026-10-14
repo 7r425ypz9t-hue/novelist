@@ -115,6 +115,22 @@ async def import_project(file: UploadFile = File(...), user: User = Depends(curr
     return {"id": str(project.id), "title": project.title}
 
 
+@router.post("/projects/{project_id}/data-merge")
+async def merge_project(file: UploadFile = File(...), acc: Access = Depends(project_access), db: Session = Depends(get_db)):
+    """Update this project from an archive of the same novel exported on the writer's other computer."""
+    acc.require("manage")
+    raw = await file.read()
+    if len(raw) > get_settings().max_upload_mb * 4 * 1024 * 1024:
+        raise ProblemError(413, "الأرشيف كبير", "تجاوز الحد المسموح.", "/problems/too-large")
+    report = portability.merge_archive(db, raw, acc.project, acc.user.id)
+    d = report["documents"]
+    audit.record(db, "project.data_merge", actor_id=acc.user.id, project_id=acc.project.id,
+                 meta={"fast_forward": len(d["fast_forward"]), "diverged": len(d["diverged"]), "new": len(d["new"]),
+                       "added": sum(report["added"].values())})
+    db.commit()
+    return report
+
+
 @router.delete("/projects/{project_id}")
 def delete_project(body: DeleteProjectIn, acc: Access = Depends(project_access), db: Session = Depends(get_db)):
     """Hard delete after typed confirmation. Derived data (chunks, exports, files) is deleted with it."""
