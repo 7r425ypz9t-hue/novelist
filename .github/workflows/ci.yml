@@ -66,10 +66,11 @@ jobs:
             $l = $links[0]
             if ($l.Path -match '\?' -or $l.Name -like 'kateb-*' -or $l.Path -notmatch '[^\x00-\x7F]') { throw "shortcut name not Arabic: $($l.Path)" }
             if (@(Get-ChildItem $f -Filter 'kateb-*.lnk').Count) { throw "temporary shortcut left in $f" }
-            # the icon path may be stored as UTF-16 or as ANSI inside the .lnk: accept either
-            $bytes = [System.IO.File]::ReadAllBytes($l.Path)
-            $txt = [System.Text.Encoding]::Unicode.GetString($bytes) + [System.Text.Encoding]::ASCII.GetString($bytes)
-            if ($txt -notmatch 'kateb\.ico') { throw "icon not set on $($l.Path)" }
+            # ask Windows for the icon exactly as Explorer will (Shell link API)
+            $iconPath = ""
+            [void]$l.GetLink.GetIconLocation([ref]$iconPath)
+            Write-Host "icon of $($l.Path): '$iconPath'"
+            if ($iconPath -notlike '*kateb.ico') { throw "icon not set on $($l.Path)" }
             if (-not (Test-Path "infra\windows\kateb.ico")) { throw "icon file missing" }
             Write-Host "OK $($l.Path) -> $($l.GetLink.Path) (working dir $($l.GetLink.WorkingDirectory))"
           }
