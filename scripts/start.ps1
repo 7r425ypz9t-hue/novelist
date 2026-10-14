@@ -34,21 +34,26 @@ function New-KatebShortcut([string]$Name, [string]$Launcher, [string]$Descriptio
   foreach ($folder in @([Environment]::GetFolderPath("Desktop"), [Environment]::GetFolderPath("Programs"))) {
     if (-not $folder) { continue }
     $lnk = Join-Path $folder "$Name.lnk"
+    # WScript.Shell cannot save a non-ASCII file name («كاتب» became «????»): save under an ASCII name,
+    # then let PowerShell (full Unicode) give it the Arabic name.
+    $tmp = Join-Path $folder ("kateb-" + [guid]::NewGuid().ToString("N").Substring(0, 8) + ".lnk")
     $shell = New-Object -ComObject WScript.Shell
-    $s = $shell.CreateShortcut($lnk)
+    $s = $shell.CreateShortcut($tmp)
     $s.TargetPath = Join-Path $Root $Launcher
     $s.WorkingDirectory = $Root
     $s.IconLocation = "$icon,0"
     $s.Description = $Description
     $s.WindowStyle = 1
     $s.Save()
+    Move-Item -LiteralPath $tmp -Destination $lnk -Force
     $made += $lnk
   }
   return $made
 }
 function New-KatebShortcuts {
-  New-KatebShortcut "كاتب" "Kateb.cmd" "كاتب — استديو الرواية" | Out-Null
-  New-KatebShortcut "كاتب — عدة أجهزة" "Kateb-multi-device.cmd" "كاتب لحواسيبك الأخرى في الشبكة" | Out-Null
+  # descriptions stay ASCII for the same WScript.Shell reason; the visible names are Arabic
+  New-KatebShortcut "كاتب" "Kateb.cmd" "Kateb - Arabic novel studio" | Out-Null
+  New-KatebShortcut "كاتب — عدة أجهزة" "Kateb-multi-device.cmd" "Kateb for your other computers on the network" | Out-Null
 }
 
 if ($CreateShortcut) {

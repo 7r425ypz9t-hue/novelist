@@ -62,6 +62,8 @@ jobs:
           foreach ($f in @([Environment]::GetFolderPath("Desktop"), [Environment]::GetFolderPath("Programs"))) {
             $lnk = @(Get-ChildItem $f -Filter *.lnk | Where-Object { $sh.CreateShortcut($_.FullName).TargetPath -like "*\Kateb.cmd" })
             if (-not $lnk) { throw "no Kateb shortcut in $f" }
+            if ($lnk[0].Name -match '\?' -or $lnk[0].Name -like 'kateb-*') { throw "shortcut name not Arabic: $($lnk[0].Name)" }
+            if (@(Get-ChildItem $f -Filter 'kateb-*.lnk').Count) { throw "temporary shortcut left in $f" }
             $s = $sh.CreateShortcut($lnk[0].FullName)
             if (-not (Test-Path ($s.IconLocation -replace ",0$", ""))) { throw "icon missing: $($s.IconLocation)" }
             Write-Host "OK $($lnk[0].Name) -> $($s.TargetPath) [$($s.IconLocation)]"
