@@ -22,8 +22,10 @@
 
 ## البدء السريع
 
+**على Windows:** انقر مرتين على `Kateb.cmd` (التحضير مرة واحدة: [`docs/operations.md`](docs/operations.md) §1أ).
+
 ```bash
-scripts/start.sh              # كاتب واحد على جهازه: http://127.0.0.1:8000 (يولّد مفتاح التشفير ويفحص الجاهزية)
+scripts/start.sh              # Mac/Linux — كاتب واحد على جهازه: http://127.0.0.1:8000 (يولّد مفتاح التشفير ويفحص الجاهزية)
 scripts/dev.sh --demo         # تطوير: الواجهة على http://localhost:5173 — الدخول التجريبي demo@nis.local / demo-password-2026
 python -m nis.cli doctor      # فحص الجاهزية في أي وقت
 ```

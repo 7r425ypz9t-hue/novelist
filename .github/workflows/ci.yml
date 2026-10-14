@@ -35,6 +35,26 @@ jobs:
       - name: security lint (bandit rules via ruff S)
         run: ruff check --select S nis
 
+  windows:
+    # The writer's own machine: backend tests on Windows, then the double-click launcher end to end
+    # (Windows PowerShell 5.1, the one Kateb.cmd uses): install, build, key, doctor, account, novel, exports.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: backend tests on Windows
+        working-directory: apps/api
+        env: { CI: "true" }
+        run: |
+          pip install -e ".[dev]"
+          python -m pytest -q
+      - name: launcher smoke test (Windows PowerShell 5.1)
+        shell: powershell
+        run: .\scripts\start.ps1 -SmokeTest -Port 8765
+
   web:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: apps/web } }

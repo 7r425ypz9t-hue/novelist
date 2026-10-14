@@ -1,0 +1,3 @@
+# Windows launchers keep CRLF and the UTF-8 BOM byte-for-byte (PowerShell 5.1 needs the BOM for Arabic text)
+*.cmd -text
+*.ps1 -text
