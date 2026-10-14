@@ -23,7 +23,8 @@ async function newNovelWithScene(page: Page, title: string) {
   await page.getByRole("link", { name: "غرفة الكتابة" }).click();
   await page.getByRole("button", { name: "+ فصل" }).click();
   await page.getByRole("button", { name: "+ مشهد" }).click();
-  // the editor becomes editable once the document and the author's permissions are loaded
+  // wait for the NEW scene to be the open unit, then for it to be editable (it is locked while switching)
+  await expect(page.getByText("الفصل 1 · المشهد 1").first()).toBeVisible();
   await expect(page.locator('.ProseMirror[contenteditable="true"]')).toBeVisible();
 }
 
@@ -162,5 +163,6 @@ test("FR04 — Arabic-aware find: tashkeel, hamza and taa forms match; whole-man
   await expect(dialog.getByText("1 موضعاً في 1 وحدة")).toBeVisible();
   await dialog.locator(".find-hit").first().click();
   await expect(dialog).toBeHidden();
-  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe("إنّ");
+  // the editor takes focus on the next frame: poll instead of reading once
+  await expect.poll(() => page.evaluate(() => window.getSelection()?.toString())).toBe("إنّ");
 });

@@ -82,6 +82,8 @@ export function WritePage() {
   // load the document of the selected node (flushing pending saves of the previous one first)
   useEffect(() => {
     let cancelled = false;
+    // lock the editor while switching units: keystrokes in this window would land in the previous unit
+    editor?.setEditable(false);
     (async () => {
       await saver.flush();
       if (!current?.document_id) { setDoc(null); return; }
